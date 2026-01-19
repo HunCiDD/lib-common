@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
 
-from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource
-from pydantic_settings.sources import YamlConfigSettingsSource
+from pydantic import BaseModel, Field, SecretStr, ConfigDict
 
 
 class AppConfig(BaseModel):
@@ -20,4 +18,13 @@ class AppConfig(BaseModel):
     port: int = Field(default=8000, description="应用端口号")
     tz: str = Field(default="Asia/Shanghai", description="应用时区")
 
+    model_config = ConfigDict(extra="ignore")
 
+
+class DBConfig(BaseModel):
+    host: str = Field(default="127.0.0.1", description="")
+    port: str = Field(default="127.0.0.1", description="")
+    username: str = Field(default="127.0.0.1", description="")
+    password: SecretStr = Field(default="127.0.0.1", description="")
+
+    model_config = ConfigDict(extra="ignore")

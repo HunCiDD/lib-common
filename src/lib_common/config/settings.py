@@ -2,7 +2,10 @@ import os
 
 from pathlib import Path
 
-from pydantic_settings import SettingsConfigDict
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource
+
+from .schemas import AppConfig, DBConfig
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -12,28 +15,33 @@ def get_model_config() -> SettingsConfigDict:
     environment = os.getenv("environment", "local")
     root = os.getenv("root", os.path.dirname(os.path.dirname(__file__)))
 
-    # 查找配置文件
-    yaml_files = []
-    config_dir = Path(root) / "configs"
+    env_paths = [
+        Path(root) / "configs" / ".env",
+        Path(root) / "configs" / f".env.{environment}",
+    ]
+    env_file = [p for p in env_paths if p.exists()]
+    if not env_file:
+        env_file = None
 
-    # 基础配置文件
-    base_config = config_dir / "config.yaml"
-    if base_config.exists():
-        yaml_files.append(str(base_config))
-
-    # 环境特定配置文件
-    env_config = config_dir / f"config.{environment}.yaml"
-    if env_config.exists():
-        yaml_files.append(str(env_config))
+    yaml_paths = [
+        Path(root) / "configs" / "config.yaml",
+        Path(root) / "configs" / f"config.{environment}.yaml",
+    ]
+    yaml_file = [p for p in yaml_paths if p.exists()]
+    if not yaml_file:
+        yaml_file = None
 
     # secrets 目录
-    secrets_dir = Path(root) / "secrets"
-    secrets_path = str(secrets_dir) if secrets_dir.exists() else None
+    secrets_path = Path(root) / "secrets"
+    secrets_dir = secrets_path if secrets_path.exists() else None
 
     return SettingsConfigDict(
-        yaml_files=yaml_files if yaml_files else None,
+        env_file=env_file,
+        env_file_encoding="utf-8",
+        env_prefix="APP_",
+        yaml_file=yaml_file,
         yaml_file_encoding='utf-8',
-        secrets_dir=secrets_path,
+        secrets_dir=secrets_dir,
         case_sensitive=False,
         extra='ignore',
     )
@@ -46,6 +54,7 @@ class Settings(BaseSettings):
     model_config = get_model_config()
 
     app: AppConfig = Field(default_factory=AppConfig)
+    db: DBConfig = DBConfig()
 
     @classmethod
     def settings_customise_sources(
@@ -57,9 +66,9 @@ class Settings(BaseSettings):
             file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (
-            YamlConfigSettingsSource(settings_cls),  # YAML 配置优先
+            init_settings,
             env_settings,
             dotenv_settings,
-            init_settings,
+            YamlConfigSettingsSource(settings_cls),  # YAML 配置优先
             file_secret_settings
         )
