@@ -1,0 +1,67 @@
+app:
+  name: ai-life-v2
+  version: v1.0
+  host: 127.0.0.1
+  port: 8080
+  tz: Asia/Shanghai
+  secret_key: 09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+  algorithm: HS256
+  access_token_expire: 10 # 分钟
+  refresh_token_expire: 3 # 天
+
+loggers:
+  common:
+    level: DEBUG
+    format: "{time:YYYY-MM-DD HH:mm:ss:SSS} | {level: <8} | {process}:{thread} | {name}:{function}:{line} | {message}"
+    colorize: false
+    serialize: false
+    backtrace: true
+    enqueue: true
+    diagnose: true
+    rotation: "10 MB"
+    retention: "1 weeks"
+    compression: "zip"
+    encoding: "utf-8"
+    sensitive_fields: (password|token|key|secret|token|session|cookie|csrf|jwt|access_token|refresh_token|id_token|client_secret|client_id|api_key|secret_key)
+    sensitive_fields_replacement: "********"
+    max_length: 1000
+    max_length_replacement: "..."
+  console:
+    type: "ConsoleLogger"
+    level: "DEBUG"
+  run:
+    type: "AppLogger"
+    level: "DEBUG"
+  operate:
+    level: "INFO"
+  api:
+    level: "INFO"
+
+# 加解密器配置
+cryptors:
+  default:
+    work_key: 156726688994f4802dcc2408b51c20952a11329198525870928115c55c23ce9716b9e94e056f817942bebd696931b47b05d5c91211b4967e7c1d029a3ba07219ec008028f18b0cecea1a1c7584100dd1
+    xform: aes/gcm/pkcs7
+
+
+# 数据库配置
+database:
+  primary:
+    poolType: AsyncSQLAlchemyDBConnectionPool
+    infra:
+      host: 127.0.0.1
+      port: 5432
+      username: postgres
+      password: hdd12345
+    settings:
+      dialect: postgresql
+      driver: asyncpg
+      database: ai-life
+
+
+redis:
+  primary:
+    host: "localhost"
+    port: 6379
+    db: 0
+
