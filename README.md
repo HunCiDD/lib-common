@@ -26,3 +26,8 @@ schemas.py
 
 配置模块
 configs.py
+
+
+## 思路
+* 每个模块有一个自己的schemas.py 定义自己的配置
+* 配置模块应用这个。
