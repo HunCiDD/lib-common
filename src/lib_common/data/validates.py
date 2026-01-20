@@ -2,7 +2,8 @@
 import re
 from ipaddress import ip_address
 from pathlib import Path
-from typing import Any
+
+from ..data.converter import IntConverter, StringConverter
 
 
 def validate_bool(value: str | bool | int) -> bool:
@@ -10,20 +11,12 @@ def validate_bool(value: str | bool | int) -> bool:
     :param value:
     :return: bool类型
     """
-    if isinstance(value, str):
-        value = value.lower().strip()
-        if value in ("true", "t", "yes", "y", "1"):
-            return True
-        elif value in ("false", "f", "no", "n", "0"):
-            return False
-        else:
-            raise ValueError(f"Invalid type for boolean: {value}")
-    elif value is None:
-        return False
-    elif isinstance(value, bool):
+    if isinstance(value, bool):
         return value
     elif isinstance(value, int):
-        return bool(value)
+        return IntConverter.to_bool(value)
+    elif isinstance(value, str):
+        return StringConverter.to_bool(value)
     else:
         raise ValueError(f"Invalid type for boolean: {type(value)}")
 
@@ -37,14 +30,6 @@ def validate_int(number: str | int) -> int:
         return int(number)
     except Exception as e:
         raise ValueError(f"Invalid integer: {number}") from e
-
-
-def validate_upper(_str: Any) -> str:
-    return str(_str).upper()
-
-
-def validate_lower(_str: Any) -> str:
-    return str(_str).lower()
 
 
 def validate_ip(ip: str) -> str:
@@ -114,21 +99,64 @@ def validate_path(path: str | Path, exist: bool = False) -> Path:
     return _path.resolve()
 
 
+def validate_contain_lower(value: str) -> str:
+    """
+    校验是否包含小写
+    :param value:
+    :return:
+    """
+    if not any(c.islower() for c in value):
+        raise ValueError("Must contain lowercase letter")
+    return value
+
+
+def validate_contain_upper(value: str) -> str:
+    """
+    校验是否包含大写
+    :param value:
+    :return:
+    """
+    if not any(c.isupper() for c in value):
+        raise ValueError("Must contain capital letter")
+    return value
+
+
+def validate_contain_digit(value: str) -> str:
+    """
+    校验是否包含数字
+    :param value:
+    :return:
+    """
+    if not any(c.isdigit() for c in value):
+        raise ValueError("Must contain number")
+    return value
+
+
+def validate_contain_special(value: str, special_chars: str = "@$!%*?&") -> str:
+    """
+    校验是否包含特殊字符
+    :param value:
+    :param special_chars:
+    :return:
+    """
+    if not any(c in special_chars for c in value):
+        raise ValueError(f"Must contain special character ({special_chars})")
+    return value
+
+
 def validate_password(password: str) -> str:
+    """
+    校验密码是否合法，必须包含大写、小写、数字、特殊字符串
+    :param password:
+    :return:
+    """
     errors = []
-    # 检查小写字母
-    if not any(c.islower() for c in password):
-        errors.append("Contains at least one lowercase letter")
-    # 检查大写字母
-    if not any(c.isupper() for c in password):
-        errors.append("Contains at least one capital letter")
-    # 检查数字
-    if not any(c.isdigit() for c in password):
-        errors.append("Contain at least one number")
-    # 检查特殊字符
-    special_chars = set("@$!%*?&")
-    if not any(c in special_chars for c in password):
-        errors.append(f"Contains at least one special character ({''.join(special_chars)})")
+    for validate_func in [validate_contain_lower, validate_contain_upper, validate_contain_digit, validate_contain_special]:
+        try:
+            validate_func(password)
+        except ValueError as e:
+            errors.append(str(e))
+
     if errors:
         raise ValueError("Password does not meet the complexity requirements: " + ", ".join(errors))
     return password

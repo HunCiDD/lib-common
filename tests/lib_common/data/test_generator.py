@@ -2,7 +2,7 @@ import time
 from uuid import UUID
 
 import pytest
-from app_base.data.generator import (
+from lib_common.data.generator import (
     RandomFloatGenerator,
     RandomIntGenerator,
     RandomStringGenerator,

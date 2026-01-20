@@ -3,6 +3,7 @@ __all__ = [
     "DatetimeConverter",
     "FloatConverter",
     "ListConverter",
+    "IntConverter",
     "StringConverter",
 ]
 
@@ -45,6 +46,14 @@ class ToDataFrameConvertMixin:
         return DataFrame(data)
 
 
+class IntConverter:
+
+    @convert_exception
+    @staticmethod
+    def to_bool(data: int, **kwargs) -> bool:
+        return bool(data)
+
+
 class FloatConverter(ToIntConvertMixin): ...
 
 
@@ -54,6 +63,27 @@ class StringConverter(ToIntConvertMixin):
     def to_datetime(data: str, **kwargs) -> datetime:
         _format = kwargs.get("format", "%Y-%m-%d %H:%M:%S")
         return datetime.strptime(data, _format)
+
+    @convert_exception
+    @staticmethod
+    def to_upper(data: str, **kwargs) -> str:
+        return str(data).strip().upper()
+
+    @convert_exception
+    @staticmethod
+    def to_lower(data: str, **kwargs) -> str:
+        return str(data).strip().lower()
+
+    @convert_exception
+    @staticmethod
+    def to_bool(data: str, **kwargs) -> bool:
+        data = data.lower().strip()
+        if data in ("true", "t", "yes", "y", "1"):
+            return True
+        elif data in ("false", "f", "no", "n", "0", 'none', 'null'):
+            return False
+        else:
+            raise ValueError(f"Invalid type for boolean: {data}")
 
 
 class ListConverter(ToDataFrameConvertMixin):
@@ -70,3 +100,6 @@ class DatetimeConverter:
     def to_string(data: datetime, **kwargs) -> str:
         _format = kwargs.get("format", "%Y-%m-%d %H:%M:%S")
         return data.strftime(_format)
+
+
+

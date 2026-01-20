@@ -1,21 +1,26 @@
 from typing import Generic
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, SecretStr
 
-from .types import T, HostType, PortType, ExistPathType
+from .types import T, HostType, PortType, UsernameType, PasswordType
 from ..data.generator import UuidGenerator
 
 
 # IP地址模型
 class AddressM(BaseModel):
-    host: HostType = "127.0.0.1"
-    port: PortType = 8000
+    host: HostType = Field(default="127.0.0.1", description="地址")
+    port: PortType = Field(default=22, description="端口")
 
 
 # 账号模型
 class AccountM(BaseModel):
     username: str | None = None
-    password: str | None = None
+    password: SecretStr | None = None
+
+
+class AccountSafeM(BaseModel):
+    username: UsernameType | None = None
+    password: PasswordType | None = None
 
 
 # 主机模型
@@ -39,6 +44,5 @@ class InfraM(HostM):
     def uuid(self) -> str:
         key = f"{self.category}:{self.cls}://{self.netloc}@{self.username}"
         return f"{UuidGenerator.by_value(key)}"
-
 
 

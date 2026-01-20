@@ -1,16 +1,16 @@
 import os
-from os import mkdir
 from pathlib import Path
 
 import pytest
-from app_base.utils.files import Dir, File, IniFile, JsonFile, YamlFile
+
+from lib_common.utils.files import Dir, File, IniFile, JsonFile, YamlFile
 
 CUR_DIR = Path(__file__).parent
 
 
 TEST_TMP_DIR = CUR_DIR / "test_tmp"
 if not os.path.exists(TEST_TMP_DIR):
-    mkdir(TEST_TMP_DIR)
+    os.mkdir(TEST_TMP_DIR)
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_file():
 def test_dir():
     _dir = TEST_TMP_DIR / "test_dir"
     if not os.path.exists(_dir):
-        mkdir(_dir)
+        os.mkdir(_dir)
     return TEST_TMP_DIR / "test_dir"
 
 

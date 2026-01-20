@@ -1,16 +1,14 @@
 from pathlib import Path
 
 import pytest
-from app_base.data.validates import (
+from lib_common.data.validates import (
     validate_bool,
     validate_host,
     validate_int,
     validate_ip,
     validate_domain,
-    validate_lower,
     validate_path,
     validate_port,
-    validate_upper,
     validate_password,
 )
 
@@ -76,36 +74,36 @@ class TestValidateInt:
             validate_int(invalid_value)
 
 
-class TestValidateUpper:
-    # Tests for validate_upper
-    @pytest.mark.parametrize(
-        "value, expected",
-        [
-            ("abc", "ABC"),
-            ("AbC", "ABC"),
-            (123, "123"),
-            (None, "NONE"),
-            ("", ""),
-        ],
-    )
-    def test_validate_upper(self, value, expected):
-        assert validate_upper(value) == expected
+# class TestValidateUpper:
+#     # Tests for validate_upper
+#     @pytest.mark.parametrize(
+#         "value, expected",
+#         [
+#             ("abc", "ABC"),
+#             ("AbC", "ABC"),
+#             (123, "123"),
+#             (None, "NONE"),
+#             ("", ""),
+#         ],
+#     )
+#     def test_validate_upper(self, value, expected):
+#         assert validate_upper(value) == expected
 
 
-class TestValidateLower:
-    # Tests for validate_lower
-    @pytest.mark.parametrize(
-        "value, expected",
-        [
-            ("ABC", "abc"),
-            ("AbC", "abc"),
-            (456, "456"),
-            (None, "none"),
-            ("", ""),
-        ],
-    )
-    def test_validate_lower(self, value, expected):
-        assert validate_lower(value) == expected
+# class TestValidateLower:
+#     # Tests for validate_lower
+#     @pytest.mark.parametrize(
+#         "value, expected",
+#         [
+#             ("ABC", "abc"),
+#             ("AbC", "abc"),
+#             (456, "456"),
+#             (None, "none"),
+#             ("", ""),
+#         ],
+#     )
+#     def test_validate_lower(self, value, expected):
+#         assert validate_lower(value) == expected
 
 
 class TestValidateIP:

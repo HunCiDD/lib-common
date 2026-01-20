@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from ..common.types import BoolType, IntType, PathType, UpperType
+from ..base.types import BoolType, IntType, PathType, UpperType
 
 
 # 日志级别

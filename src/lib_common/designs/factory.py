@@ -1,7 +1,7 @@
 # 工厂模式
-from typing import TypeVar, Generic
+from typing import Generic
 
-T = TypeVar("T")
+from ..base.types import T
 
 
 # 注册工厂

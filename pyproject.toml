@@ -8,7 +8,9 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "defusedxml>=0.7.1",
     "pandas>=2.3.3",
+    "pycryptodome>=3.23.0",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.12.0",
     "pyyaml>=6.0.3",
@@ -22,3 +24,28 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.0.2",
 ]
+
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+# 启用推荐的规则集（包括 pycodestyle, pyflakes 等）
+select = [         # 选择的规则
+    "F",
+    "E",
+    "W",
+    "UP",
+]
+ignore = [
+    "F401",
+    "UP035",
+    "UP037",
+    "UP006"
+]  # 忽略的规则
+
+include = ["pyproject.toml", "**/*.py"]
+exclude = [".venv"]
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true  # 格式化文档字符串中的代码
