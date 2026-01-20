@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 from pathlib import Path
 
@@ -72,3 +73,8 @@ class Settings(BaseSettings):
             YamlConfigSettingsSource(settings_cls),  # YAML 配置优先
             file_secret_settings
         )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
