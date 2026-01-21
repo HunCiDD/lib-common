@@ -1,12 +1,14 @@
 import os
+from typing import Dict
 from functools import lru_cache
 
 from pathlib import Path
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource
+from pydantic_settings import (BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource,
+                               NestedSecretsSettingsSource)
 
-from .schemas import AppConfig, DBConfig
+from .schemas import AppConfigsM, LoggerConfigsM, DatabaseConfigsM, RedisConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -40,11 +42,13 @@ def get_model_config() -> SettingsConfigDict:
         env_file=env_file,
         env_file_encoding="utf-8",
         env_prefix="APP_",
+        env_nested_delimiter="__",  # 关键配置
         yaml_file=yaml_file,
-        yaml_file_encoding='utf-8',
+        yaml_file_encoding="utf-8",
         secrets_dir=secrets_dir,
-        case_sensitive=False,
-        extra='ignore',
+        secrets_nested_subdir=True,
+        case_sensitive=False,  # 忽略大小写
+        extra="ignore",
     )
 
 
@@ -54,8 +58,11 @@ class Settings(BaseSettings):
     # 使用动态配置
     model_config = get_model_config()
 
-    app: AppConfig = Field(default_factory=AppConfig)
-    db: DBConfig = DBConfig()
+    app: AppConfigsM = Field(default_factory=AppConfigsM, description="App应用配置")
+    loggers: Dict[str, LoggerConfigsM] = Field(default_factory=dict, description="日志配置")
+    databases: Dict[str, DatabaseConfigsM] = Field(default_factory=dict, description="数据库配置")
+    redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
+    secrets: Dict[str, str] = Field(default_factory=dict, description="Secret配置")
 
     @classmethod
     def settings_customise_sources(
@@ -66,12 +73,13 @@ class Settings(BaseSettings):
             dotenv_settings: PydanticBaseSettingsSource,
             file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # 自定义数据源优先级
         return (
-            init_settings,
-            env_settings,
-            dotenv_settings,
+            init_settings,  # 构造函数参数（最高优先级）
+            env_settings,   # 环境变量
+            dotenv_settings,    # .env 文件
+            NestedSecretsSettingsSource(file_secret_settings),  # Secrets 文件
             YamlConfigSettingsSource(settings_cls),  # YAML 配置优先
-            file_secret_settings
         )
 
 

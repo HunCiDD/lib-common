@@ -1,0 +1,2 @@
+# 日志级别
+LOG_LEVELS = ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"]

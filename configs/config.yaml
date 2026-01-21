@@ -48,15 +48,13 @@ cryptors:
 database:
   primary:
     poolType: AsyncSQLAlchemyDBConnectionPool
-    infra:
-      host: 127.0.0.1
-      port: 5432
-      username: postgres
-      password: hdd12345
-    settings:
-      dialect: postgresql
-      driver: asyncpg
-      database: ai-life
+    host: 127.0.0.1
+    port: 5432
+    username: postgres
+    password: hdd12345
+    dialect: postgresql
+    driver: asyncpg
+    db: ai-life
 
 
 redis:

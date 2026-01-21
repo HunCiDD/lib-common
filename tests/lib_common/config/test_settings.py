@@ -2,15 +2,15 @@ import os
 
 import pytest
 
-from lib_common.config.settings import Settings
+from lib_common.config.settings import get_settings
 
 
 class TestSettings:
 
 
     def test_001(self):
-        s = Settings()
-        print(s)
+        s = get_settings()
+        print(s.model_dump())
 
 
 if __name__ == '__main__':

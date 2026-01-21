@@ -34,9 +34,9 @@ BoolType = Annotated[str | bool | int, AfterValidator(validate_bool)]
 # 整型类型
 IntType = Annotated[str | int, AfterValidator(validate_int)]
 # 大写类型
-UpperType = Annotated[str, AfterValidator(validate_contain_upper)]
+UpperType = Annotated[str, BeforeValidator(StringConverter.to_upper)]
 # 小写类型
-LowerType = Annotated[str, AfterValidator(validate_contain_lower)]
+LowerType = Annotated[str, BeforeValidator(StringConverter.to_lower)]
 # 主机类型
 HostType = Annotated[str, AfterValidator(validate_host)]
 # 端口类型, 1 <= port <= 65535
