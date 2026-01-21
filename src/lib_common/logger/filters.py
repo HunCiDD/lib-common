@@ -3,16 +3,16 @@ import re
 
 import loguru
 
-from .schemas import LoguruSettingsM
+from ..config.schemas import LoggerConfigsM
 
 
 # 基础过滤器
 class BaseFilter:
     _filters: List[Callable] = []
 
-    def __init__(self, name: str, settings: LoguruSettingsM):
+    def __init__(self, name: str, configs: LoggerConfigsM):
         self.name = name
-        self.settings = settings
+        self.configs = configs
 
     def call(self, record: "loguru.Record") -> bool:
         for filter_func in self._filters:
@@ -37,8 +37,8 @@ def filter_sensitive_fields(record: "loguru.Record", filter_: BaseFilter, *args,
     message = record.get("message")
     if not message:
         return True
-    sensitive_fields = filter_.settings.sensitive_fields
-    sensitive_fields_replacement = filter_.settings.sensitive_fields_replacement
+    sensitive_fields = filter_.configs.sensitive_fields
+    sensitive_fields_replacement = filter_.configs.sensitive_fields_replacement
     pattern = re.compile(rf"{sensitive_fields}([:=\s]+)(\w+)", re.IGNORECASE)
     new_message = re.sub(pattern, rf"\1\2{sensitive_fields_replacement}", message)
     record["message"] = new_message
@@ -58,8 +58,8 @@ def filter_max_length(record: "loguru.Record", filter_: BaseFilter, *args, **kwa
     if not message:
         return True
 
-    max_length = filter_.settings.max_length
-    max_length_replacement = filter_.settings.max_length_replacement
+    max_length = filter_.configs.max_length
+    max_length_replacement = filter_.configs.max_length_replacement
     if len(message) > max_length:
         record["message"] = f"{message[:max_length]}{max_length_replacement}"
     return True

@@ -1,19 +1,21 @@
 from typing import Dict
 from sys import stdout
+from pathlib import Path
 import loguru
 
 from ..designs.singleton import SingletonMeta
-from ..common.settings import AppRunSettings
+from ..config.settings import get_settings, Settings
 from .loggers import LoggerFactory
+
+SETTINGS = get_settings()
 
 
 class LoggersManager(metaclass=SingletonMeta):
     _loggers: Dict[str, "loguru.Logger"] = {}
     _sink_maps: Dict[str, int] = {}
 
-    def __init__(self, run_settings: AppRunSettings, **kwargs):
-        self._run_settings = run_settings
-        self._settings = self._run_settings.loggers
+    def __init__(self, settings: Settings, **kwargs):
+        self._settings = settings
         self._kwargs = kwargs
         self._init_loggers()
 
@@ -22,15 +24,15 @@ class LoggersManager(metaclass=SingletonMeta):
         # 移除所有现有的sink
         loguru.logger.remove()
         # 非生产环境，初始化控制台
-        if self._run_settings.app.env != "prod":
+        if self._settings.app.environment != "production":
             self._init_console_logger()
 
     def _init_console_logger(self):
-        common_settings = self._settings.get("common", {})
-        console_settings = self._settings.get("console", {})
-        merged_settings = {**common_settings, **console_settings}
+        common_configs = self._settings.loggers.get("common", {})
+        console_configs = self._settings.loggers.get("console", {})
+        merged_configs = {**common_configs, **console_configs}
         # 添加console
-        self._add_logger("console", merged_settings)
+        self._add_logger("console", merged_configs)
 
     def _add_logger(self, key: str, key_settings: dict | None = None) -> "loguru.Logger | None":
         """
@@ -42,19 +44,19 @@ class LoggersManager(metaclass=SingletonMeta):
         if key_settings is None:
             key_settings = {}
 
-        common_settings = self._settings.get("common", {})
-        merged_settings = {**common_settings, **key_settings}
-        if not merged_settings:
+        common_configs = self._settings.get("common", {})
+        merged_configs = {**common_configs, **key_settings}
+        if not merged_configs:
             return None
 
-        if "sink" not in merged_settings:
+        if "sink" not in merged_configs:
             if key == "console":
-                merged_settings["sink"] = stdout
+                merged_configs["sink"] = stdout
             else:
-                merged_settings["sink"] = self._run_settings.app.root / f"logs/{key}.log"
+                merged_configs["sink"] = Path(self._settings.app.root) / f"logs/{key}.log"
 
-        logger_type = merged_settings.get("type", "FileLogger")
-        logger_instance = LoggerFactory.create(logger_type, key, merged_settings, **self._kwargs)
+        logger_type = merged_configs.get("type", "FileLogger")
+        logger_instance = LoggerFactory.create(logger_type, key, merged_configs, **self._kwargs)
         if logger_instance:
             self._loggers[key] = logger_instance.logger
             self._sink_maps[key] = logger_instance.sink_id

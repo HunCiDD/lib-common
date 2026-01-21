@@ -1,6 +1,7 @@
 import os
 import re
 from collections.abc import Callable
+from io import TextIOWrapper
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, SecretStr
 
@@ -30,6 +31,7 @@ class AppConfigsM(BaseModel):
 
 class LoggerConfigsM(BaseModel):
     """日志器配置"""
+    sink: TextIOWrapper | PathType | None = None
     level: UpperType | None = "INFO"
     format: str | Callable | None = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
     filter: str | Callable | None = None

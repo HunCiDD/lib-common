@@ -6,15 +6,15 @@ from contextvars import ContextVar
 import loguru
 
 from ..designs.factory import RegisterFactory
-from .schemas import ConsoleLoguruSettingsM, FileLoguruSettingsM
+from ..config.schemas import LoggerConfigsM
 from .filters import BaseFilter, filter_name, filter_max_length, filter_sensitive_fields
 from .patchers import BasePatcher
 
 
 class BaseLogger(ABC):
-    def __init__(self, name: str, settings: dict, **kwargs):
+    def __init__(self, name: str, configs: dict, **kwargs):
         self.name = name
-        self.settings = settings
+        self.configs = configs
         self.kwargs = kwargs
         self._sink_id: int = -1
         self._logger: "loguru.Logger | None" = None
@@ -47,9 +47,9 @@ class LoggerFactory(RegisterFactory[BaseLogger]):
 @LoggerFactory.register("ConsoleLogger")
 class ConsoleLogger(BaseLogger):
     def _init_logger(self) -> None:
-        _settings_m = ConsoleLoguruSettingsM(**self.settings)
+        _configs = LoggerConfigsM(**self.configs)
         # 一定要启用Filter，否则导致bind 不生效
-        params = _settings_m.model_dump(
+        params = _configs.model_dump(
             include={"level", "format", "colorize", "serialize", "backtrace", "enqueue", "diagnose", "context"},
             exclude_none=True,
         )
@@ -72,15 +72,15 @@ class FilePatcher(BasePatcher): ...
 @LoggerFactory.register("FileLogger")
 class FileLogger(BaseLogger):
     def _init_logger(self) -> None:
-        _settings_m = FileLoguruSettingsM(**self.settings)
+        _configs = LoggerConfigsM(**self.configs)
         # 一定要启用Filter，否则导致bind 不生效
-        _filter = FileFilter(self.name, _settings_m)
-        _settings_m.filter = _filter.call
+        _filter = FileFilter(self.name, _configs)
+        _configs.filter = _filter.call
         if hasattr(self, "_formatter"):
-            _settings_m.format = self._formatter
-        if not _settings_m.sink:
+            _configs.format = self._formatter
+        if not _configs.sink:
             raise Exception(f"{self.name} sink is required")  # 使用自定义异常
-        params = _settings_m.model_dump(
+        params = _configs.model_dump(
             exclude={
                 "type",
                 "sensitive_fields",
@@ -92,7 +92,7 @@ class FileLogger(BaseLogger):
         )
         self._sink_id = loguru.logger.add(**params)
         self._logger = loguru.logger.bind(name=self.name)  # 使用self.name而不是硬编码
-        _patcher = FilePatcher(self.name, _settings_m)
+        _patcher = FilePatcher(self.name, _configs)
         self._logger.patch(_patcher.call)
 
 
