@@ -86,3 +86,18 @@ lib_common/
 |── settings.py 配置对象
 └── configs.py 全局配置模块
 ```
+
+
+```
+app_xxx/
+│── constants.py 常量模块
+│── application.py 应用模块
+│── dependencies.py 应用依赖注入
+│── schemas.py 应用相关模型
+│── models.py 应用模型
+│── repositories.py 应用存储层
+│── service.py 应用服务层
+│── routers.py 路由模块
+│── configs.py 全局配置模块
+└── main..py 入口
+```
