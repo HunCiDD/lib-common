@@ -1,8 +1,6 @@
-import os
-
 import pytest
 
-from lib_common.config.settings import get_settings
+from lib_common.settings import get_settings
 
 
 class TestSettings:

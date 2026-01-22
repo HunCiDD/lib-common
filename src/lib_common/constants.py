@@ -1,3 +1,7 @@
+# 日志级别
+LOG_LEVELS = ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"]
+
+
 class RegexPatterns:
     Num = r"^[0-9]+$"  # 纯数字
     Str = r"^[a-zA-Z]+$"  # 纯字母

@@ -1,9 +1,33 @@
-from pydantic import ConfigDict
+from typing import Generic
 
-from libs.common.data.generator import UuidGenerator
-from libs.common.schemas import HostM
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
+
+from ...data.generator import UuidGenerator
+from ...types import T, HostType, PortType, UsernameType, PasswordType
 
 
+# IP地址模型
+class AddressM(BaseModel):
+    host: HostType = Field(default="127.0.0.1", description="地址")
+    port: PortType = Field(default=22, description="端口")
+
+
+# 账号模型
+class AccountM(BaseModel):
+    username: str | None = None
+    password: SecretStr | None = None
+
+
+class AccountSafeM(BaseModel):
+    username: UsernameType | None = None
+    password: PasswordType | None = None
+
+
+# 主机模型
+class HostM(AddressM, AccountM): ...
+
+
+# 基础设施
 class InfraM(HostM):
     name: str = ""  # 名称
     category: str = ""  # 分类
@@ -20,3 +44,10 @@ class InfraM(HostM):
     def uuid(self) -> str:
         key = f"{self.category}:{self.cls}://{self.netloc}@{self.username}"
         return f"{UuidGenerator.by_value(key)}"
+
+
+# 定义统一的响应模型
+class ResponseM(BaseModel, Generic[T]):
+    code: int = Field(default=200, ge=0)
+    message: str = ""
+    data: T | None = None

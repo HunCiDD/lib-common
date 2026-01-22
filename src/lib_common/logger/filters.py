@@ -3,7 +3,7 @@ import re
 
 import loguru
 
-from ..config.schemas import LoggerConfigsM
+from lib_common.schemas import LoggerConfigsM
 
 
 # 基础过滤器

@@ -6,7 +6,7 @@ from contextvars import ContextVar
 import loguru
 
 from ..designs.factory import RegisterFactory
-from ..config.schemas import LoggerConfigsM
+from lib_common.schemas import LoggerConfigsM
 from .filters import BaseFilter, filter_name, filter_max_length, filter_sensitive_fields
 from .patchers import BasePatcher
 

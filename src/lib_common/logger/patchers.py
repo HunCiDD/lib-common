@@ -2,7 +2,7 @@ from typing import List, Callable
 
 import loguru
 
-from ..config.schemas import LoggerConfigsM
+from lib_common.schemas import LoggerConfigsM
 
 
 class BasePatcher:

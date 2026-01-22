@@ -8,7 +8,7 @@ from pydantic import Field
 from pydantic_settings import (BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource,
                                NestedSecretsSettingsSource)
 
-from .schemas import AppConfigsM, LoggerConfigsM, DatabaseConfigsM, RedisConfigsM
+from lib_common.schemas import AppConfigsM, LoggerConfigsM, DatabaseConfigsM, RedisConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:

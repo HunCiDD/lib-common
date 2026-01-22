@@ -1,7 +1,7 @@
 from typing import Dict
 from threading import Lock
 
-from libs.common.settings import RunSettings
+from ...settings import Settings
 from .interface import IConnectionPool, IAsyncConnectionPool
 from .schemas import InfraM
 from .factory import ConnectionPoolFactory
@@ -10,8 +10,8 @@ from .factory import ConnectionPoolFactory
 class ConnectionPoolManager:
     _pools: Dict[str, IConnectionPool | IAsyncConnectionPool] = {}
 
-    def __init__(self, run_settings: RunSettings, **kwargs):
-        self._run_settings = run_settings
+    def __init__(self, settings: Settings, **kwargs):
+        self._settings = settings
         self._kwargs = kwargs
         self._lock = Lock()
         self._init_pools()

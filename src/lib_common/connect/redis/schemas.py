@@ -1,8 +1,14 @@
-# from common.types import PortType
-# from common.schemas import AddressM
-#
-#
+from pydantic import ConfigDict
+
+from ..base.schemas import HostM
+
 # # ------------------- Redis Configuration -------------------
-# class RedisSettingM(AddressM):
-#     port: PortType = 3679
-#     db: int = 0
+class RedisConfigsM(HostM):
+    """Redis配置"""
+    database: str = ""
+
+    model_config = ConfigDict(extra="ignore")
+
+    @property
+    def dsn(self) -> str:
+        return ""

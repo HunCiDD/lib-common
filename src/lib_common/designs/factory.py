@@ -1,7 +1,7 @@
 # 工厂模式
 from typing import Generic
 
-from ..base.types import T
+from lib_common.types import T
 
 
 # 注册工厂

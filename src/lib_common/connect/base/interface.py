@@ -2,8 +2,8 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from typing import Generic
 
-from libs.common.types import T
-from libs.common.schemas import ResponseM
+from ...types import T
+from .schemas import ResponseM
 
 
 # ------------------- 请求 ---------------------
