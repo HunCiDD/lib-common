@@ -4,10 +4,8 @@ from pathlib import Path
 import loguru
 
 from ..designs.singleton import SingletonMeta
-from lib_common.settings import get_settings, Settings
+from ..settings import Settings
 from .loggers import LoggerFactory
-
-SETTINGS = get_settings()
 
 
 class LoggersManager(metaclass=SingletonMeta):

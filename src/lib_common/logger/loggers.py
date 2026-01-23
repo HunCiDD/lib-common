@@ -6,7 +6,7 @@ from contextvars import ContextVar
 import loguru
 
 from ..designs.factory import RegisterFactory
-from lib_common.schemas import LoggerConfigsM
+from .schemas import LoggerConfigsM
 from .filters import BaseFilter, filter_name, filter_max_length, filter_sensitive_fields
 from .patchers import BasePatcher
 
@@ -102,7 +102,6 @@ class AppLogContextVar:
 
 @LoggerFactory.register("AppLogger")
 class AppLogger(FileLogger):
-
     @staticmethod
     def _formatter(record) -> str:
         request_id = AppLogContextVar.request_id_var.get()
@@ -113,4 +112,3 @@ class AppLogger(FileLogger):
             + " {message}\n"
         )
         return _message
-

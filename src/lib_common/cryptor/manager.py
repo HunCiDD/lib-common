@@ -1,31 +1,35 @@
 from typing import Dict
 
 from ..designs.singleton import SingletonMeta
-from ..common.settings import AppRunSettings
 from .cryptor import Cryptor
+from ..settings import Settings
 
 
 class CryptorManager(metaclass=SingletonMeta):
     _cryptors: Dict[str, Cryptor] = {}
 
-    def __init__(self, run_settings: AppRunSettings, **kwargs):
-        self._run_settings = run_settings
-        self._settings = self._run_settings.cryptors
+    def __init__(self, settings: Settings, **kwargs):
+        self._settings = settings
+        if not self._settings.cryptors:
+            raise ValueError("未配置加密")
+
+        if not self._settings.cryptors.root:
+            raise ValueError("未配置根加密")
+
         self._kwargs = kwargs
         self._init_cryptors()
 
     def _init_cryptors(self):
-        for key, key_settings in self._settings.items():
-            work_key = key_settings.get("work_key", "")
-            xform = key_settings.get("xform", "aes/gcm/pkcs7")
-            if not work_key:
+        for key, work_configs in self._settings.cryptors.work.items():
+            work_secret = work_configs.secret.get_secret_value()
+            if not work_secret:
                 continue
-            self._add_cryptor(key, work_key, xform=xform)
+            self._add_cryptor(key, work_secret.encode("utf-8"), xform=work_configs.xform)
 
     def _add_cryptor(self, key: str, work_key: bytes | None = None, xform: str = "aes/gcm/pkcs7") -> Cryptor | None:
         if not work_key:
             return None
-        ct = Cryptor(work_key, xform=xform)
+        ct = Cryptor(config=self._settings.cryptors.root, work_key=work_key, xform=xform)
         self._cryptors[key] = ct
         return ct
 

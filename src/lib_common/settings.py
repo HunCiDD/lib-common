@@ -5,10 +5,19 @@ from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
-from pydantic_settings import (BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource,
-                               NestedSecretsSettingsSource)
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+    PydanticBaseSettingsSource,
+    YamlConfigSettingsSource,
+    NestedSecretsSettingsSource,
+)
 
-from lib_common.schemas import AppConfigsM, LoggerConfigsM, DatabaseConfigsM, RedisConfigsM
+from .logger.schemas import LoggerConfigsM
+from .cryptor.schemas import CryptorConfigsM
+from .connect.database.schemas import DatabaseConfigsM
+from .connect.redis.schemas import RedisConfigsM
+from .app.schemas import AppConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -47,6 +56,7 @@ def get_model_config() -> SettingsConfigDict:
         yaml_file_encoding="utf-8",
         secrets_dir=secrets_dir,
         secrets_nested_subdir=True,
+        secrets_prefix="",
         case_sensitive=False,  # 忽略大小写
         extra="ignore",
     )
@@ -58,26 +68,28 @@ class Settings(BaseSettings):
     # 使用动态配置
     model_config = get_model_config()
 
-    app: AppConfigsM = Field(default_factory=AppConfigsM, description="App应用配置")
     loggers: Dict[str, LoggerConfigsM] = Field(default_factory=dict, description="日志配置")
+
+    cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
+
     databases: Dict[str, DatabaseConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
-    secrets: Dict[str, str] = Field(default_factory=dict, description="Secret配置")
+    app: AppConfigsM = Field(default_factory=AppConfigsM, description="App应用配置")
 
     @classmethod
     def settings_customise_sources(
-            cls,
-            settings_cls: type[BaseSettings],
-            init_settings: PydanticBaseSettingsSource,
-            env_settings: PydanticBaseSettingsSource,
-            dotenv_settings: PydanticBaseSettingsSource,
-            file_secret_settings: PydanticBaseSettingsSource,
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         # 自定义数据源优先级
         return (
             init_settings,  # 构造函数参数（最高优先级）
-            env_settings,   # 环境变量
-            dotenv_settings,    # .env 文件
+            env_settings,  # 环境变量
+            dotenv_settings,  # .env 文件
             NestedSecretsSettingsSource(file_secret_settings),  # Secrets 文件
             YamlConfigSettingsSource(settings_cls),  # YAML 配置优先
         )

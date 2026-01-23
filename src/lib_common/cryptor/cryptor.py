@@ -1,6 +1,4 @@
 import binascii
-import os
-from pathlib import Path
 
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
@@ -9,11 +7,7 @@ from Crypto.Util import Padding
 from Crypto.Util.strxor import strxor
 
 from ..data.generator import RandomBytesGenerator
-from ..utils.files import IniFile
-
-CRYPTOR_SETTINGS = IniFile(Path(__file__).parent / ".cryptor.ini").load()
-CRYPTOR_ROOT_SETTINGS = CRYPTOR_SETTINGS["root"]
-CRYPTOR_WORK_SETTINGS = CRYPTOR_SETTINGS["work"]
+from .schemas import CryptorRootConfigsM
 
 
 class CryptoException(Exception):
@@ -86,22 +80,23 @@ class KeyManager:
     WORK_KEY_LENGTH = 32
     PBKDF2_ITERATIONS = 600_000
 
-    def __init__(self):
+    def __init__(self, configs: CryptorRootConfigsM):
+        self._configs = configs
+        if not self._configs:
+            raise ValueError("Root configs is required")
         self.root_key = self.derive_root_key()
         self.crypto_base = CryptoBase(self.root_key, "aes/gcm/pkcs7")
 
     @property
     def root_secret(self) -> bytes:
-        _config = os.getenv("SECRET", "") or CRYPTOR_ROOT_SETTINGS["secret"]
-        secret = binascii.unhexlify(_config)
+        secret = binascii.unhexlify(self._configs.secret.get_secret_value())
         if len(secret) < self.ROOT_KEY_LENGTH:
             raise CryptoException("Root secret too short")
         return secret
 
     @property
     def root_material(self) -> bytes:
-        _config = os.getenv("MATERIAL", "") or CRYPTOR_ROOT_SETTINGS["material"]
-        material = binascii.a2b_base64(CRYPTOR_ROOT_SETTINGS["material"])
+        material = binascii.a2b_base64(self._configs.material.get_secret_value())
         if len(material) < self.ROOT_KEY_LENGTH:
             raise CryptoException("Root material too short")
         return material
@@ -109,7 +104,7 @@ class KeyManager:
     @property
     def root_salt(self) -> bytes:
         # 盐值
-        return binascii.a2b_base64(CRYPTOR_ROOT_SETTINGS["salt"])
+        return binascii.a2b_base64(self._configs.salt)
 
     def derive_root_key(self) -> bytes:
         """使用PBKDF2派生根密钥"""
@@ -148,10 +143,10 @@ class KeyManager:
 
 
 class Cryptor:
-    def __init__(self, work_key: bytes, xform: str = "aes/gcm/pkcs7"):
+    def __init__(self, config: CryptorRootConfigsM, work_key: bytes, xform: str = "aes/gcm/pkcs7"):
         self.work_key = work_key
         self.xform = xform
-        self.key_manager = KeyManager()
+        self.key_manager = KeyManager(config)
         self.crypto_base = CryptoBase(self.key_manager.decrypt_work_key(self.work_key), self.xform)
 
     def encrypt(self, plain_text: str) -> str:

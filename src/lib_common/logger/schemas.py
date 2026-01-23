@@ -1,9 +1,9 @@
-import os
+
 import re
 from collections.abc import Callable
 from io import TextIOWrapper
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, SecretStr
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from ..constants import LOG_LEVELS
 from ..types import BoolType, PathType, UpperType, IntType
@@ -11,6 +11,7 @@ from ..types import BoolType, PathType, UpperType, IntType
 
 class LoggerConfigsM(BaseModel):
     """日志器配置"""
+
     sink: TextIOWrapper | PathType | None = None
     level: UpperType | None = "INFO"
     format: str | Callable | None = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
@@ -27,7 +28,7 @@ class LoggerConfigsM(BaseModel):
     compression: str | None = None
     sensitive_fields: str = (
         "(password|token|key|secret|token|session|cookie|csrf|jwt|access_token|refresh_token"
-        "|id_token|client_secret|client_id|api_key|secret_key)"
+        "|id_token|client_secret|client_id|api_key|secret)"
     )
     sensitive_fields_replacement: str = "********"
     max_length: IntType = 2000

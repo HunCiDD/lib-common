@@ -18,6 +18,7 @@ def convert_exception(func):
     :param func:
     :return:
     """
+
     def wrapper(data, **kwargs):
         try:
             return func(data, **kwargs)
@@ -47,7 +48,6 @@ class ToDataFrameConvertMixin:
 
 
 class IntConverter:
-
     @convert_exception
     @staticmethod
     def to_bool(data: int, **kwargs) -> bool:
@@ -80,7 +80,7 @@ class StringConverter(ToIntConvertMixin):
         data = data.lower().strip()
         if data in ("true", "t", "yes", "y", "1"):
             return True
-        elif data in ("false", "f", "no", "n", "0", 'none', 'null'):
+        elif data in ("false", "f", "no", "n", "0", "none", "null"):
             return False
         else:
             raise ValueError(f"Invalid type for boolean: {data}")
@@ -100,6 +100,3 @@ class DatetimeConverter:
     def to_string(data: datetime, **kwargs) -> str:
         _format = kwargs.get("format", "%Y-%m-%d %H:%M:%S")
         return data.strftime(_format)
-
-
-

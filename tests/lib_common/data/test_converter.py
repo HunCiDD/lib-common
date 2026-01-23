@@ -11,37 +11,21 @@ from pandas import DataFrame
 
 
 class TestFloatConverter:
-
-    @pytest.mark.parametrize(
-        "value, expected",
-        [
-            (123.45, 123),
-            (0.1, 0)
-        ]
-    )
+    @pytest.mark.parametrize("value, expected", [(123.45, 123), (0.1, 0)])
     def test_to_int_success(self, value, expected):
         assert FloatConverter.to_int(value) == expected
 
-    @pytest.mark.parametrize(
-        "value",
-        ["abc", None]
-    )
+    @pytest.mark.parametrize("value", ["abc", None])
     def test_to_int_failure(self, value):
         with pytest.raises(Exception):
             FloatConverter.to_int("abc")
 
-    @pytest.mark.parametrize(
-        "value, default, expected",
-        [
-            ("abc", 0, 0)
-        ]
-    )
+    @pytest.mark.parametrize("value, default, expected", [("abc", 0, 0)])
     def test_to_int_default(self, value, default, expected):
         assert FloatConverter.to_int(value, default=default) == expected
 
 
 class TestStringConvert:
-
     @pytest.mark.parametrize("value, expected", [("-1", -1), ("2", 2)])
     def test_to_int_success(self, value, expected):
         assert StringConverter.to_int(value) == expected
@@ -55,7 +39,7 @@ class TestStringConvert:
         "value, expected",
         [
             ("2023-10-01 12:34:56", datetime(2023, 10, 1, 12, 34, 56)),
-        ]
+        ],
     )
     def test_to_datetime_success(self, value, expected):
         result = StringConverter.to_datetime(value)
@@ -75,6 +59,8 @@ class TestStringConvert:
     def test_to_datetime_failure(self, value):
         with pytest.raises(Exception):
             StringConverter.to_datetime("invalid date")
+
+
 class TestListConverter:
     def test_to_string_default_separator(self):
         data = ["a", "b", "c"]

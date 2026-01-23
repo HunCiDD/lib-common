@@ -26,4 +26,3 @@ class RegisterFactory(Generic[T]):
         if name not in cls._map:
             return None
         return cls._map[name](*args, **kwargs)
-

@@ -151,7 +151,12 @@ def validate_password(password: str) -> str:
     :return:
     """
     errors = []
-    for validate_func in [validate_contain_lower, validate_contain_upper, validate_contain_digit, validate_contain_special]:
+    for validate_func in [
+        validate_contain_lower,
+        validate_contain_upper,
+        validate_contain_digit,
+        validate_contain_special,
+    ]:
         try:
             validate_func(password)
         except ValueError as e:

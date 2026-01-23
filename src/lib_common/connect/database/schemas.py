@@ -7,6 +7,7 @@ from ..base.schemas import HostM
 # ------------------- Database Configuration -------------------
 class DatabaseConfigsM(HostM):
     """数据库配置"""
+
     # 数据库类型 (mysql/postgresql/sqlite/oracle等)
     dialect: str
     # 驱动 (pymysql/psycopg2/cx_oracle等)
@@ -20,4 +21,3 @@ class DatabaseConfigsM(HostM):
     @property
     def dsn(self) -> str:
         return ""
-

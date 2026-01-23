@@ -52,4 +52,3 @@ class DynamicDict(MutableMapping):
         else:
             with self._lock:
                 self._storage[name] = value
-

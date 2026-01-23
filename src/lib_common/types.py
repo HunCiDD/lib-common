@@ -1,4 +1,4 @@
-from typing import TypeVar, Literal, Annotated
+from typing import TypeVar, Annotated
 from datetime import datetime
 from pathlib import Path
 
@@ -61,6 +61,3 @@ DateTimeType = Annotated[
         examples=[f"{DateTimeGenerator.now().strftime('%Y-%m-%d %H:%M:%S')}"],
     ),
 ]
-
-
-

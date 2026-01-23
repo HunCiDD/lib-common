@@ -1,5 +1,5 @@
 import pytest
-from lib_common.security.cryptor import CRYPTOR_WORK_SETTINGS, Cryptor
+from lib_common.cryptor.cryptor import CRYPTOR_WORK_SETTINGS, Cryptor
 
 
 class TestCryptor:
