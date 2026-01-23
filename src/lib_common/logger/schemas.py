@@ -1,4 +1,3 @@
-
 import re
 from collections.abc import Callable
 from io import TextIOWrapper

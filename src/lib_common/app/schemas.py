@@ -1,6 +1,9 @@
 import os
+from typing import List, Generic
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, SecretStr
+from pydantic import BaseModel, Field, ConfigDict, SecretStr
+
+from ..types import T, SchemaGeTT
 
 
 class AppConfigsM(BaseModel):
@@ -18,3 +21,17 @@ class AppConfigsM(BaseModel):
     secret: SecretStr
 
     model_config = ConfigDict(extra="ignore")
+
+
+class PageData(BaseModel, Generic[SchemaGeTT]):
+    items: List[SchemaGeTT]
+    page: int  # 页码
+    size: int  # 单页数量
+    total: int  # 总数量
+    pages: int  # 总页数
+
+
+class ApiResponse(BaseModel, Generic[T]):
+    code: int = Field(default=200, ge=0)
+    message: str = ""
+    data: T | None = None

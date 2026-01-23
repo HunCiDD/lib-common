@@ -20,7 +20,6 @@ class BaseResponse(TypeMixin):
         self.kwargs = kwargs
 
 
-
 # ------------------- 连接池 ---------------------
 class BaseConnectionPool(TypeMixin):
     def __init__(self, infra: InfraM, settings: dict = None, **kwargs):
