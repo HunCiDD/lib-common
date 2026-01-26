@@ -17,7 +17,7 @@ from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
 from .connect.database.schemas import DatabaseConfigsM
 from .connect.redis.schemas import RedisConfigsM
-from .app.schemas import AppConfigsM
+from .app.schemas import AppConfigs
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -74,7 +74,7 @@ class Settings(BaseSettings):
 
     databases: Dict[str, DatabaseConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
-    app: AppConfigsM = Field(default_factory=AppConfigsM, description="App应用配置")
+    app: AppConfigs = Field(default_factory=AppConfigs, description="App应用配置")
 
     @classmethod
     def settings_customise_sources(

@@ -2,13 +2,14 @@ from typing import Dict
 
 from pydantic import BaseModel, Field, SecretStr
 
-
+# 根秘钥
 class CryptorRootConfigsM(BaseModel):
     material: SecretStr
     salt: str
     secret: SecretStr
 
 
+# 工作秘钥
 class CryptorWorkConfigsM(BaseModel):
     secret: SecretStr
     xform: str = "aes/gcm/pkcs7"

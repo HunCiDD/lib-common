@@ -8,7 +8,7 @@ from ..settings import Settings
 from .loggers import LoggerFactory
 
 
-class LoggersManager(metaclass=SingletonMeta):
+class LoggerManager(metaclass=SingletonMeta):
     _loggers: Dict[str, "loguru.Logger"] = {}
     _sink_maps: Dict[str, int] = {}
 

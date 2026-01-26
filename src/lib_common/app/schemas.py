@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict, SecretStr
 from ..types import T, SchemaGeTT
 
 
-class AppConfigsM(BaseModel):
+class AppConfigs(BaseModel):
     """应用配置"""
 
     environment: str = Field(default="production", description="运行环境")
@@ -31,7 +31,7 @@ class PageData(BaseModel, Generic[SchemaGeTT]):
     pages: int  # 总页数
 
 
-class ApiResponse(BaseModel, Generic[T]):
+class Response(BaseModel, Generic[T]):
     code: int = Field(default=200, ge=0)
     message: str = ""
     data: T | None = None

@@ -1,10 +1,10 @@
 from pydantic import ConfigDict
 
-from ..base.schemas import HostM
+from ..base.schemas import Host
 
 
 # # ------------------- Redis Configuration -------------------
-class RedisConfigsM(HostM):
+class RedisConfigsM(Host):
     """Redis配置"""
 
     database: str = ""

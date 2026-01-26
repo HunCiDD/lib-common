@@ -3,7 +3,7 @@ from threading import Lock
 
 from ...settings import Settings
 from .interface import IConnectionPool, IAsyncConnectionPool
-from .schemas import InfraM
+from .schemas import Infra
 from .factory import ConnectionPoolFactory
 
 
@@ -26,7 +26,7 @@ class ConnectionPoolManager:
         if not pool_type:
             raise ValueError
 
-        infra = InfraM(**settings.get("infra", {}))
+        infra = Infra(**settings.get("infra", {}))
         _settings = settings.get("settings", {})
 
         pool = ConnectionPoolFactory.create(pool_type, infra, _settings)
