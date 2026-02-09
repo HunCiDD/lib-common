@@ -2,6 +2,7 @@ from typing import Any
 
 from ...mixins import TypeMixin
 
+
 # ------------------- 请求 ---------------------
 class BaseRequest(TypeMixin):
     AUTH = False  # 是否需要认证

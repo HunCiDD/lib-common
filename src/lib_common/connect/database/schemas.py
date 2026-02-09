@@ -10,6 +10,7 @@ from ..base.schemas import Infra
 # ------------------- Database Configuration -------------------
 class DatabaseConfigs(BaseModel):
     """数据库配置"""
+
     type: str = Field(default="AsyncSQLAlchemyDBConnectionPool", description="类型")
     infra: Infra = Field(default_factory=Infra, description="基础设施配置")
     # 数据库类型 (mysql/postgresql/sqlite/oracle等)
@@ -22,4 +23,3 @@ class DatabaseConfigs(BaseModel):
     echo: bool = True
 
     model_config = ConfigDict(extra="ignore")
-

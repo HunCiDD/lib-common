@@ -1,9 +1,8 @@
-
 from ...mixins import TypeMixin
 
 from ..base.interface import IRequest, ICaller, IAsyncCaller
 from ..base.factory import CallerFactory
-from .core import SqlRequest,
+from .core import SqlRequest, SqlResponse
 from .pool import SQLAlchemyDBConnectionPool, AsyncSQLAlchemyDBConnectionPool
 
 
@@ -13,7 +12,7 @@ class SQLAlchemyDBCaller(TypeMixin, ICaller):
         self.pool = pool
         self.kwargs = kwargs
 
-    def send(self, request: SqlRequest) -> ResponseM: ...
+    def send(self, request: SqlRequest) -> SqlResponse: ...
 
 
 @CallerFactory.register("AsyncSQLAlchemyDBCaller")
@@ -22,4 +21,4 @@ class AsyncSQLAlchemyDBCaller(TypeMixin, IAsyncCaller):
         self.pool = pool
         self.kwargs = kwargs
 
-    async def send(self, request: IRequest) -> ResponseM: ...
+    async def send(self, request: IRequest) -> SqlResponse: ...

@@ -45,4 +45,3 @@ class Infra(Host):
     def uuid(self) -> str:
         key = f"{self.category}:{self.cls}://{self.netloc}@{self.username}"
         return f"{UuidGenerator.by_value(key)}"
-

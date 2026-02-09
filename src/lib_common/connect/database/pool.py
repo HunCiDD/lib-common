@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from ...data.validates import validate_path
 from .schemas import DatabaseConfigs
 from ..base.schemas import Infra
+from ..base.interface import IConnectionPool, IAsyncConnectionPool
 from ..base.pool import BaseConnectionPool
 from ..base.factory import ConnectionPoolFactory
 
@@ -134,9 +135,9 @@ class AsyncSQLAlchemyDBConnectionContext:
 
 @ConnectionPoolFactory.register("SQLAlchemyDBConnectionPool")
 class SQLAlchemyDBConnectionPool(BaseSQLAlchemyDBConnectionPool, IConnectionPool[Session]):
-    def __init__(self, infra: Infra = None, settings: dict = None, **kwargs):
-        super().__init__(infra, settings, **kwargs)
-        self.engine: Engine = create_engine(self.url, echo=self._settings_m.echo, **self.engine_kwargs)
+    def __init__(self, configs: DatabaseConfigs, **kwargs):
+        super().__init__(configs, **kwargs)
+        self.engine: Engine = create_engine(self.url, echo=self.configs.echo, **self.engine_kwargs)
         self.session_factory = sessionmaker(self.engine, autoflush=False)
 
     def get_connection(self) -> Session:
@@ -153,10 +154,10 @@ class SQLAlchemyDBConnectionPool(BaseSQLAlchemyDBConnectionPool, IConnectionPool
 
 @ConnectionPoolFactory.register("AsyncSQLAlchemyDBConnectionPool")
 class AsyncSQLAlchemyDBConnectionPool(BaseSQLAlchemyDBConnectionPool, IAsyncConnectionPool[AsyncSession]):
-    def __init__(self, infra: Infra = None, settings: dict = None, **kwargs):
-        super().__init__(infra, settings, **kwargs)
+    def __init__(self, configs: DatabaseConfigs, **kwargs):
+        super().__init__(configs, **kwargs)
         self.engine_kwargs = {}
-        self.engine: AsyncEngine = create_async_engine(self.url, echo=self._settings_m.echo, **self.engine_kwargs)
+        self.engine: AsyncEngine = create_async_engine(self.url, echo=self.configs.echo, **self.engine_kwargs)
         self.session_factory = async_sessionmaker(
             self.engine, autoflush=False, expire_on_commit=False, class_=AsyncSession
         )
@@ -170,5 +171,3 @@ class AsyncSQLAlchemyDBConnectionPool(BaseSQLAlchemyDBConnectionPool, IAsyncConn
     def connection(self) -> AsyncSQLAlchemyDBConnectionContext:
         """上下文管理器获取连接"""
         return AsyncSQLAlchemyDBConnectionContext(self)
-
-

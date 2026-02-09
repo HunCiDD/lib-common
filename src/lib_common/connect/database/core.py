@@ -1,4 +1,3 @@
-
 from typing import List
 
 from sqlalchemy.orm import DeclarativeBase
@@ -6,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 from ..base.interface import IRequest, IResponse
 from ..base.factory import RequestFactory, ResponseFactory
 from ..base.core import BaseRequest, BaseResponse
+
 
 class Base(DeclarativeBase): ...
 
@@ -62,4 +62,3 @@ class SqlResponse(BaseResponse, IResponse):
 
     def process(self):
         pass
-

@@ -5,8 +5,6 @@ from fastapi import FastAPI
 from ..configs import LOGGERS
 
 # 必须导入loggers 否则新增的logger无法注册
-# noinspection PyUnresolvedReferences
-from . import loggers
 from .middlewares import RequestIDMiddleware
 from .exceptions import (
     HTTPException,

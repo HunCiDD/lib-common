@@ -2,6 +2,7 @@ from typing import Dict
 
 from pydantic import BaseModel, Field, SecretStr
 
+
 # 根秘钥
 class CryptorRootConfigsM(BaseModel):
     material: SecretStr

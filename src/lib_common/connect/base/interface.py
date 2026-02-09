@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from typing import Generic
 
 from ...types import T
-from .schemas import ResponseM
+from .core import BaseRequest, BaseResponse
 
 
 # ------------------- 请求 ---------------------
@@ -58,13 +58,13 @@ class IAsyncConnectionPool(ABC, Generic[T]):
 # ------------------- 调用器 ---------------------
 class ICaller(ABC):
     @abstractmethod
-    def send(self, request: IRequest) -> ResponseM:
+    def send(self, request: IRequest) -> BaseResponse:
         """发送连接"""
         ...
 
 
 class IAsyncCaller(ABC):
     @abstractmethod
-    async def send(self, request: IRequest) -> ResponseM:
+    async def send(self, request: IRequest) -> BaseResponse:
         """发送连接"""
         ...
