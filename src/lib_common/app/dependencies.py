@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 from pydantic import BaseModel, Field, create_model
 from fastapi import Request, Query
 
-from libs.common.funcs import SQLALCHEMY_OPERATOR_MAP
+from ..connect.database.funcs import SQLALCHEMY_OPERATOR_MAP
 
 
 class ConditionParams:
@@ -29,15 +29,15 @@ class ConditionParams:
                 # 根据操作符确定字段类型
                 if operator == "__in":
                     # __in 操作符需要列表类型
-                    operate_field_type = Optional[List[field_type]]
+                    operate_field_type = List[field_type] | None
                     default_value = None
                 elif operator == "__isnull":
                     # __isnull 操作符需要布尔类型
-                    operate_field_type = Optional[bool]
+                    operate_field_type = bool | None
                     default_value = None
                 else:
                     # 其他操作符使用原字段类型
-                    operate_field_type = Optional[field_type]
+                    operate_field_type = field_type | None
                     default_value = None
 
                 # 创建字段描述

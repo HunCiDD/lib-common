@@ -1,6 +1,6 @@
 from ...designs.singleton import SingletonMeta
 
-from ..base.manager import ConnectionPoolManager
+from ..core.manager import ConnectionPoolManager
 
 
 class DBConnectionPoolManager(ConnectionPoolManager, metaclass=SingletonMeta):

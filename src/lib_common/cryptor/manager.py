@@ -1,7 +1,7 @@
 from typing import Dict
 
 from ..designs.singleton import SingletonMeta
-from .cryptor import Cryptor
+from .base import Cryptor
 from ..settings import Settings
 
 

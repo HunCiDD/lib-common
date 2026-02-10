@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from ...types import PathType
 
-from ..base.schemas import Infra
+from ..core.schemas import Infra
 
 
 # ------------------- Database Configuration -------------------

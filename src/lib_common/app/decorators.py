@@ -1,14 +1,15 @@
 import functools
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import T
-
-from ..connect.database.base import AsyncSession
-from ..configs import LOGGERS
+from ..configs import loggers, databases
 from .exceptions import ServiceException
 
 
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
+primary_db = databases.get_pool("primary")
 
 
 def _conn_wrapper(func: Callable[..., T], transaction: bool) -> Callable[..., T]:
@@ -25,7 +26,7 @@ def _conn_wrapper(func: Callable[..., T], transaction: bool) -> Callable[..., T]
                 return await func(self, *args, **kwargs)
 
             # 创建新连接并管理事务
-            async with APP_MAIN_DB.connection() as conn:
+            async with primary_db.connection() as conn:
                 if not transaction:
                     result = await func(self, *args, conn=conn, **kwargs)
                     run_logger.info(f"{logs}, Success")

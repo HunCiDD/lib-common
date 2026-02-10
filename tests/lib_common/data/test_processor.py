@@ -1,6 +1,6 @@
 import pytest
 
-from lib_common.data.processor import StringProcessor, ListProcessor, DictProcessor  # 替换 your_module 为实际模块名
+from lib_common.data.utils.processor import StringProcessor, ListProcessor, DictProcessor
 
 
 class TestStringProcessor:

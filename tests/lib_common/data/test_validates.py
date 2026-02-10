@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from lib_common.data.validates import (
+from lib_common.data.utils.validates import (
     validate_bool,
     validate_host,
     validate_int,

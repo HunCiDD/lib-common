@@ -1,9 +1,9 @@
 from fastapi import APIRouter, status
 
-from libs.common.configs import LOGGERS
+from ..configs import loggers
 
 router = APIRouter(tags=["app_base"])
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
 
 
 @router.get("/home", status_code=status.HTTP_200_OK)

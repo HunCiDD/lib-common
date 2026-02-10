@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 # 导入被测试的编码器
-from lib_common.data.encoder import JsonEncoder  # 替换 your_module 为实际模块名
+from lib_common.data.utils.encoder import JsonEncoder  # 替换 your_module 为实际模块名
 
 
 class TestJsonEncoder:

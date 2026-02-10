@@ -1,8 +1,8 @@
 from ...mixins import TypeMixin
 
-from ..base.interface import IRequest, ICaller, IAsyncCaller
-from ..base.factory import CallerFactory
-from .core import SqlRequest, SqlResponse
+from ..core.interface import IRequest, ICaller, IAsyncCaller
+from ..core.factory import CallerFactory
+from .base import SqlRequest, SqlResponse
 from .pool import SQLAlchemyDBConnectionPool, AsyncSQLAlchemyDBConnectionPool
 
 

@@ -1,10 +1,7 @@
-from typing import Generic
-
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
-from ...data.generator import UuidGenerator
-from ...mixins import TypeMixin
-from ...types import T, HostType, PortType, UsernameType, PasswordType
+from lib_common.data.utils.generator import UuidGenerator
+from ...types import HostType, PortType, UsernameType, PasswordType
 
 
 # IP地址模型

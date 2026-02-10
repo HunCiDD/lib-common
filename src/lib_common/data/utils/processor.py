@@ -1,6 +1,6 @@
 # 数据处理器
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 import pytz
 
 
@@ -85,5 +85,5 @@ class DateTimeProcessor:
         target_tz = pytz.timezone(tz)
         # 确保时间对象有时区信息
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)  # 假设无时区时间为UTC
+            dt = dt.replace(tzinfo=UTC)  # 假设无时区时间为UTC
         return dt.astimezone(target_tz)

@@ -5,7 +5,7 @@ import loguru
 
 from ..designs.singleton import SingletonMeta
 from ..settings import Settings
-from .loggers import LoggerFactory
+from .base import LoggerFactory
 
 
 class LoggerManager(metaclass=SingletonMeta):

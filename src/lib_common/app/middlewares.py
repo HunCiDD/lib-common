@@ -4,12 +4,11 @@ import time
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from libs.common.data.generator import UuidGenerator
-from libs.common.configs import LOGGERS
-from .loggers import AppLogContextVar
+from ..data.utils.generator import UuidGenerator
+from ..logger.base import AppLogContextVar
+from ..configs import loggers
 
-
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
 
 
 class RequestIDMiddleware:

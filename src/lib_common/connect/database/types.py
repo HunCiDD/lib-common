@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlalchemy import String
 from sqlalchemy.orm import mapped_column
 
-from ...data.generator import UuidGenerator
+from lib_common.data.utils.generator import UuidGenerator
 
 
 PKType = Annotated[

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from ..configs import LOGGERS
+from ..configs import loggers
 
 # 必须导入loggers 否则新增的logger无法注册
 from .middlewares import RequestIDMiddleware
@@ -15,7 +15,7 @@ from .exceptions import (
     service_exception_handler,
 )
 
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
 
 
 @asynccontextmanager

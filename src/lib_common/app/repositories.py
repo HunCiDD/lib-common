@@ -3,14 +3,14 @@ from typing import Generic, List, Any, TypeVar
 from abc import ABC, abstractmethod
 
 from sqlalchemy import select, func, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from libs.common.types import T
-from libs.common.funcs import SQLALCHEMY_OPERATOR_MAP
-from libs.common.configs import LOGGERS
-from libs.connect.database.base import BaseModel, AsyncSession
+from ..types import T
+from ..connect.database.funcs import SQLALCHEMY_OPERATOR_MAP
+from ..connect.database.base import BaseModel
+from ..configs import loggers
 
-
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
 
 
 class IRepository(ABC, Generic[T]):
@@ -117,7 +117,8 @@ class BaseRepository(IRepository[M], Generic[M]):
         """
         根据条件过滤查询结构
         :param conn:
-        :param kwargs: id=1, id__in=[1, 2, 3], id__gt=25, {"id__in": [], "offset": 1, "limit": 2, "_sort": {"id": "desc"}}
+        :param kwargs: id=1, id__in=[1, 2, 3], id__gt=25,
+        {"id__in": [], "offset": 1, "limit": 2, "_sort": {"id": "desc"}}
         :return:
         """
         run_logger.debug(f"List {self.model_type.__name__}")

@@ -32,8 +32,11 @@ dev = [
 [tool.ruff]
 line-length = 120
 indent-width = 4
-# 启用推荐的规则集（包括 pycodestyle, pyflakes 等）
-select = [         # 选择的规则
+include = ["pyproject.toml", "**/*.py"]
+exclude = [".venv"]
+
+[tool.ruff.lint]  # 新增 lint 模块
+select = [
     "F",
     "E",
     "W",
@@ -43,12 +46,10 @@ ignore = [
     "F401",
     "UP035",
     "UP037",
-    "UP006"
-]  # 忽略的规则
-
-include = ["pyproject.toml", "**/*.py"]
-exclude = [".venv"]
+    "UP006",
+    "UP046"
+]
 
 [tool.ruff.format]
 quote-style = "double"
-docstring-code-format = true  # 格式化文档字符串中的代码
+docstring-code-format = true

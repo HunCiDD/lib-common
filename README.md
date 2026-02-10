@@ -93,3 +93,11 @@ app_xxx/
 │── configs.py 全局配置模块
 └── main..py 入口
 ```
+
+```shell
+# 初始化项目
+uv init .
+
+# 自动修复配置结构
+uvx ruff check --fix
+```

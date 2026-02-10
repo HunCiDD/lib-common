@@ -1,13 +1,15 @@
 from typing import Type, Any, Generic, List
 
-from libs.common.configs import LOGGERS
-from libs.connect.database.base import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..types import SchemaAddT, SchemaSetT, SchemaGeTT
+from .schemas import PageData
+from ..configs import loggers
 from .exceptions import ServiceException
-from .schemas import PageData, SchemaAddT, SchemaSetT, SchemaGeTT
 from .repositories import BaseRepository, M
 from .decorators import with_transaction
 
-run_logger = LOGGERS.get_logger("run")
+run_logger = loggers.get_logger("run")
 
 
 class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGeTT]):
@@ -24,7 +26,7 @@ class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGeTT]):
         entity = schema.model_dump(exclude_unset=True)
         model = await self.repo.add(conn, entity=entity, **kwargs)
         if not model:
-            raise ServiceException(message=f"Failed add to db")
+            raise ServiceException(message="Failed add to db")
         return model
 
     async def _del_m(self, pk: str, conn: AsyncSession = None, **kwargs: Any):
@@ -38,7 +40,7 @@ class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGeTT]):
         entity = schema.model_dump(exclude_unset=True)
         model = await self.repo.set(conn, pk, entity, **kwargs)
         if not model:
-            raise ServiceException(message=f"Failed set to db, Not found")
+            raise ServiceException(message="Failed set to db, Not found")
         return model
 
     async def _get_m(self, pk: str, conn: AsyncSession = None, **kwargs: Any) -> M:
