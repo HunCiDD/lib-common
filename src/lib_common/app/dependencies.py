@@ -1,12 +1,62 @@
 from typing import Optional, List, Dict, Type, Any, get_type_hints
 
+import jwt
 from urllib.parse import parse_qs
 from pydantic import BaseModel, Field, create_model
-from fastapi import Request, Query
+from fastapi import Request, Query, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ..connect.database.funcs import SQLALCHEMY_OPERATOR_MAP
+from ..configs import settings, loggers, cryptors
+from .exceptions import UnauthorizedException, ForbiddenException
 
 
+run_logger = loggers.get_logger("run")
+cryptor = cryptors.get_cryptor("default")
+
+
+def get_jwt_payload(security: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> dict:
+    """
+    获取Token中 payload数据
+    :param security:
+    :return:
+    """
+    try:
+        token = security.credentials
+        secret = settings.app.secret.get_secret_value()
+        payload = jwt.decode(token, secret, algorithms=[settings.app.algorithm])
+        if payload.get("type") != "access":
+            raise UnauthorizedException(message="Invalid token type, must be access")
+
+        return payload
+    except jwt.ExpiredSignatureError as e:
+        run_logger.exception(e)
+        raise UnauthorizedException(message="Token has expired")
+    except jwt.InvalidTokenError as e:
+        run_logger.exception(e)
+        raise UnauthorizedException(message="Token invalid")
+    except Exception as e:
+        run_logger.exception(e)
+        raise UnauthorizedException(message="Internal server error")
+
+
+# 权限校验
+class PermissionChecker:
+    def __init__(self, required_permission):
+        self.required_permission = required_permission
+
+    def __call__(self, jwt_payload: dict = Depends(get_jwt_payload)):
+        permissions = jwt_payload.get("permissions", [])
+        if "all" in permissions:
+            return
+
+        if self.required_permission in permissions:
+            return
+
+        raise ForbiddenException("Permission denied")
+
+
+# 条件过滤参数构建
 class ConditionParams:
     def __init__(self, base_model: Type[BaseModel]):
         self._model_name = f"{base_model.__name__}FilterParams"

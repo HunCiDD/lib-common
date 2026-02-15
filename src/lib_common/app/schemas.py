@@ -19,6 +19,9 @@ class AppConfigs(BaseModel):
     tz: str = Field(default="Asia/Shanghai", description="应用时区")
 
     secret: SecretStr
+    algorithm: str = "HS256"
+    access_token_expire: int = 15  # 分钟
+    refresh_token_expire: int = 3  # 天
 
     model_config = ConfigDict(extra="ignore")
 

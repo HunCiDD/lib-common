@@ -22,7 +22,7 @@ class ConnectionPoolManager:
         if settings is None:
             raise ValueError
 
-        pool_type = settings.get("poolType", "")
+        pool_type = settings.get("type", "")
         if not pool_type:
             raise ValueError
 
