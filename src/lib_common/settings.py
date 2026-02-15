@@ -24,8 +24,8 @@ def get_model_config() -> SettingsConfigDict:
     """
     从环境变量加载运行环境名，根路径。动态指定配置文件
     """
-    environment = os.getenv("environment", "local")
-    root = os.getenv("root", os.path.dirname(os.path.dirname(__file__)))
+    environment = os.getenv("APP__ENVIRONMENT", "local")
+    root = os.getenv("APP__ROOT", os.path.dirname(os.path.dirname(__file__)))
 
     env_paths = [
         Path(root) / "configs" / ".env",
@@ -50,7 +50,6 @@ def get_model_config() -> SettingsConfigDict:
     return SettingsConfigDict(
         env_file=env_file,
         env_file_encoding="utf-8",
-        env_prefix="APP_",
         env_nested_delimiter="__",  # 关键配置
         yaml_file=yaml_file,
         yaml_file_encoding="utf-8",

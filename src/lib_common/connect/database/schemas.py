@@ -8,7 +8,7 @@ from ..core.schemas import Infra
 
 
 # ------------------- Database Configuration -------------------
-class DatabaseConfigs(BaseModel):
+class DatabaseConfigsM(BaseModel):
     """数据库配置"""
 
     type: str = Field(default="AsyncSQLAlchemyDBConnectionPool", description="类型")

@@ -100,4 +100,6 @@ uv init .
 
 # 自动修复配置结构
 uvx ruff check --fix
+
+uvx ruff format
 ```

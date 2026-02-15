@@ -2,6 +2,7 @@ from typing import List, Callable
 from abc import ABC, abstractmethod
 from sys import stdout
 from contextvars import ContextVar
+import logging
 
 import loguru
 
@@ -9,6 +10,28 @@ from ..designs.factory import RegisterFactory
 from .schemas import LoggerConfigsM
 from .filters import BaseFilter, filter_name, filter_max_length, filter_sensitive_fields
 from .patchers import BasePatcher
+
+
+# ==================== ✅ 拦截标准库日志 ====================
+# class InterceptHandler(logging.Handler):
+#         def emit(self, record):
+#             # 获取 Loguru 对应的 level
+#             try:
+#                 level = logger.level(record.levelname).name
+#             except ValueError:
+#                 level = record.levelno
+#             # 调用 Loguru，depth 调整调用栈深度，显示真实调用位置
+#             logger.opt(depth=6, exception=record.exc_info).log(level, record.getMessage())
+#
+#     # 替换 logging 根处理器
+#     logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO, force=True)
+#
+#     # 可选：按模块调整级别（清单 ✅ 按需级别）
+#     # 例如将 uvicorn 访问日志提至 WARNING，减少干扰
+#     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+#     logging.getLogger("uvicorn.error").propagate = False  # 已由 Loguru 接管
+#
+#     logger.info(f"Loguru configured, env={env}, sample_rate={sample_rate}")
 
 
 class BaseLogger(ABC):

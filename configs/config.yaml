@@ -38,14 +38,13 @@ loggers:
     level: "INFO"
 
 # 加解密器配置
-cryptor:
-  default:
-    work_key: 156726688994f4802dcc2408b51c20952a11329198525870928115c55c23ce9716b9e94e056f817942bebd696931b47b05d5c91211b4967e7c1d029a3ba07219ec008028f18b0cecea1a1c7584100dd1
-    xform: aes/gcm/pkcs7
+cryptors:
+  root:
+    salt: 4a8HiqCooyxaevn78tDyPghHrBD7POULoZRN5eTY/e4=
 
 
 # 数据库配置
-database:
+databases:
   primary:
     type: AsyncSQLAlchemyDBConnectionPool
     infra:

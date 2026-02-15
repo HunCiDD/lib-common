@@ -5,7 +5,7 @@ import loguru
 
 from ..designs.singleton import SingletonMeta
 from ..settings import Settings
-from .base import LoggerFactory
+from .base import BaseLogger, LoggerFactory
 
 
 class LoggerManager(metaclass=SingletonMeta):
@@ -26,11 +26,9 @@ class LoggerManager(metaclass=SingletonMeta):
             self._init_console_logger()
 
     def _init_console_logger(self):
-        common_configs = self._settings.loggers.get("common", {})
-        console_configs = self._settings.loggers.get("console", {})
-        merged_configs = {**common_configs, **console_configs}
+        console_settings = self._settings.loggers["common"].model_dump(exclude_unset=True)
         # 添加console
-        self._add_logger("console", merged_configs)
+        self._add_logger("console", console_settings)
 
     def _add_logger(self, key: str, key_settings: dict | None = None) -> "loguru.Logger | None":
         """
@@ -42,19 +40,21 @@ class LoggerManager(metaclass=SingletonMeta):
         if key_settings is None:
             key_settings = {}
 
-        common_configs = self._settings.get("common", {})
-        merged_configs = {**common_configs, **key_settings}
-        if not merged_configs:
+        common_settings = self._settings.loggers["common"].model_dump(exclude_unset=True)
+        merged_settings = {**common_settings, **key_settings}
+        if not merged_settings:
             return None
 
-        if "sink" not in merged_configs:
+        if "sink" not in merged_settings:
             if key == "console":
-                merged_configs["sink"] = stdout
+                merged_settings["sink"] = stdout
             else:
-                merged_configs["sink"] = Path(self._settings.app.root) / f"logs/{key}.log"
+                merged_settings["sink"] = Path(self._settings.app.root) / f"logs/{key}.log"
 
-        logger_type = merged_configs.get("type", "FileLogger")
-        logger_instance = LoggerFactory.create(logger_type, key, merged_configs, **self._kwargs)
+        logger_type = merged_settings.get("type", "FileLogger")
+        logger_instance = LoggerFactory.create(logger_type, key, merged_settings, **self._kwargs)
+        if not isinstance(logger_instance, BaseLogger):
+            raise TypeError("logger_instance must be an instance of BaseLogger")
         if logger_instance:
             self._loggers[key] = logger_instance.logger
             self._sink_maps[key] = logger_instance.sink_id
@@ -82,8 +82,8 @@ class LoggerManager(metaclass=SingletonMeta):
             return self._loggers[key]
 
         # 不在缓存中，检查配置中是否存在，存在创建并返回
-        if key in self._settings:
-            key_settings = self._settings[key]
+        if key in self._settings.loggers:
+            key_settings = self._settings.loggers[key].model_dump(exclude_unset=True)
             return self._add_logger(key, key_settings)
         return None
 
