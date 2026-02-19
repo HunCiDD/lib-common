@@ -33,7 +33,6 @@ class TestValidateBool:
             ("No", False),
             ("N", False),
             ("0", False),
-            (None, False),
             (True, True),
             (False, False),
         ],

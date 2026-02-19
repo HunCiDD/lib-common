@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Type, Any, get_type_hints
+from typing import List, Dict, Type, Any, get_type_hints
 
 import jwt
 from urllib.parse import parse_qs
@@ -17,7 +17,7 @@ cryptor = cryptors.get_cryptor("default")
 
 def get_jwt_payload(security: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> dict:
     """
-    获取Token中 payload数据
+    获取jwt中 payload数据
     :param security:
     :return:
     """

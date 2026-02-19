@@ -1,6 +1,6 @@
 # 数据处理器
 
-from datetime import datetime, timezone, UTC
+from datetime import datetime, UTC
 import pytz
 
 

@@ -1,7 +1,7 @@
 import re
 import pytest
 
-from lib_common.data.regex import RegexPatterns  # 替换 your_module 为实际模块名
+from lib_common.constants import RegexPatterns
 
 
 class TestRegexPatterns:

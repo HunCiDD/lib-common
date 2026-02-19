@@ -2,7 +2,6 @@ from typing import List, Callable
 from abc import ABC, abstractmethod
 from sys import stdout
 from contextvars import ContextVar
-import logging
 
 import loguru
 

@@ -1,9 +1,4 @@
-from typing import Callable, List
-from pathlib import Path
 import os
-
-import pytest
-from dotenv import load_dotenv
 
 
 def pytest_configure():

@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from typing import Generic
 
 from ...types import T
-from .base import BaseRequest, BaseResponse
+from .base import BaseResponse
 
 
 # ------------------- 请求 ---------------------
