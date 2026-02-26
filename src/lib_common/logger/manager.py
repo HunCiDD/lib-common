@@ -26,7 +26,7 @@ class LoggerManager(metaclass=SingletonMeta):
             self._init_console_logger()
 
     def _init_console_logger(self):
-        console_settings = self._settings.loggers["common"].model_dump(exclude_unset=True)
+        console_settings = self._settings.loggers["console"].model_dump(exclude_unset=True)
         # 添加console
         self._add_logger("console", console_settings)
 
