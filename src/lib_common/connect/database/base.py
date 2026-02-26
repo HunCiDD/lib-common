@@ -1,10 +1,13 @@
+from __future__ import annotations
 from typing import List
 
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.engine import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from ..core.interface import IRequest, IResponse
-from ..core.factory import RequestFactory, ResponseFactory
-from ..core.base import BaseRequest, BaseResponse
+from ...data.utils.validates import validate_path
+from ..base import IInfra, IAsyncInfra
+from .schemas import DBConfigsM
 
 
 class Base(DeclarativeBase): ...
@@ -38,27 +41,153 @@ class BaseModel(Base):
         return _dict
 
 
-@RequestFactory.register("SqlRequest")
-class SqlRequest(BaseRequest, IRequest):
-    def __init__(self, sql: str, params: dict = None, **kwargs):
-        super().__init__(**kwargs)
-        self.sql = sql
-        self.params = params
+class DBInfra:
+    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
+        self.name = name
+        self.configs = configs or {}
+        self.kwargs = kwargs
+        self.cm = DBConfigsM(**self.configs)
 
-    def validate(self) -> bool:
-        pass
+    @property
+    def url(self) -> str:
+        dialect, driver = self.cm.dialect, self.cm.driver
+        username, password = self.cm.infra.username, self.cm.infra.password
+        netloc = self.cm.infra.netloc
+        database = self.cm.database
+        file = self.cm.file
 
-    def build(self):
-        pass
+        if dialect == "sqlite":
+            if ":memory:" == file.name:
+                file = ":memory:"
+            else:
+                validate_path(file, exist=True)
+
+            if driver == "":
+                return f"{dialect}:///{file}"
+            else:
+                return f"{dialect}+{driver}:///{file}"
+        else:
+            return f"{dialect}+{driver}://{username}:{password}@{netloc}/{database}"
+
+    @property
+    def engine_configs(self) -> dict:
+        if self.cm.dialect == "sqlite" and self.cm.file.name == ":memory:":
+            return {
+                "connect_args": {"check_same_thread": False},
+            }
+        else:
+            return {
+                "pool_pre_ping": True,      # 使用前检查连接是否有效
+                "pool_recycle": 300,        # 每5分钟回收连接(秒) - 防止服务器超时断开
+                "pool_size": 10,            # 连接池大小
+                "max_overflow": 20,         # 允许超过pool_size的连接数
+                "pool_timeout": 30,         # 获取连接超时时间(秒)
+                "connect_args": {
+                    "command_timeout": 60,  # 单个命令超时时间(秒)
+                },
+            }
 
 
-@ResponseFactory.register("SqlResponse")
-class SqlResponse(BaseResponse, IResponse):
-    def __init__(self, code: int, msg: str = "", data: dict = None, **kwargs):
-        super().__init__(code, msg, data)
+class SQLAlchemyDBConnectionContext:
+    def __init__(self, db: SQLAlchemyDB):
+        self.db = db
+        self.session = None
 
-    def validate(self) -> bool:
-        pass
+    def __enter__(self) -> Session:
+        self.session = self.db.get_connection()
+        return self.session
 
-    def process(self):
-        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """退出上下文时处理连接"""
+        if self.session is None:
+            return False
+
+        try:
+            if exc_type is None:
+                # 没有异常时提交事务
+                self.session.commit()
+            else:
+                # 有异常时回滚事务
+                self.session.rollback()
+                print(f"Exception in session context: {exc_val}")
+        except Exception as e:
+            print(f"Error during session cleanup: {e}")
+            # 如果清理过程中出错，仍然需要关闭会话
+        finally:
+            # 确保会话被关闭
+            self.db.release_connection(self.session)
+            self.session = None
+
+        # 返回 False 表示不抑制异常
+        return False
+
+
+class SQLAlchemyDB(DBInfra, IInfra):
+
+    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
+        super().__init__(name, configs, **kwargs)
+        self.engine: Engine = create_engine(self.url, echo=self.cm.echo, **self.engine_configs)
+        self.session_factory = sessionmaker(self.engine, autoflush=False)
+
+
+    def get_connection(self) -> Session:
+        session = self.session_factory()
+        return session
+
+    def release_connection(self, conn: Session):
+        conn.close()
+
+    def connection(self) -> SQLAlchemyDBConnectionContext:
+        """上下文管理器获取连接"""
+        return SQLAlchemyDBConnectionContext(self)
+
+
+class AsyncSQLAlchemyDBConnectionContext:
+    def __init__(self, db: AsyncSQLAlchemyDB):
+        self.db = db
+        self.session = None
+
+    async def __aenter__(self) -> AsyncSession:
+        self.session = await self.db.get_connection()
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if not self.session:
+            return False
+
+        try:
+            if exc_type is None:
+                # 没有异常时提交事务
+                await self.session.commit()
+            else:
+                await self.session.rollback()
+                print(f"Exception in session context: {exc_val}")
+        except Exception as e:
+            print(f"Error during session cleanup: {e}")
+            # 如果清理过程中出错，仍然需要关闭会话
+        finally:
+            # 确保会话被关闭
+            await self.db.release_connection(self.session)
+            self.session = None
+
+        # 返回 False 表示不抑制异常
+        return False
+
+
+class AsyncSQLAlchemyDB(DBInfra, IAsyncInfra):
+    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
+        super().__init__(name, configs, **kwargs)
+        self.engine: AsyncEngine = create_async_engine(self.url, echo=self.cm.echo)
+        self.session_factory = async_sessionmaker(
+            self.engine, autoflush=False, expire_on_commit=False, class_=AsyncSession
+        )
+
+    async def get_connection(self) -> AsyncSession:
+        return self.session_factory()
+
+    async def release_connection(self, conn: AsyncSession):
+        await conn.close()
+
+    def connection(self) -> AsyncSQLAlchemyDBConnectionContext:
+        """上下文管理器获取连接"""
+        return AsyncSQLAlchemyDBConnectionContext(self)

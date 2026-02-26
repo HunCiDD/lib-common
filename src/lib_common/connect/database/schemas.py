@@ -2,16 +2,15 @@
 from pydantic import BaseModel, Field, ConfigDict
 
 from ...types import PathType
-
-from ..core.schemas import Infra
+from ..schemas import InfraConfigsM
 
 
 # ------------------- Database Configuration -------------------
-class DatabaseConfigsM(BaseModel):
+class DBConfigsM(BaseModel):
     """数据库配置"""
 
-    type: str = Field(default="AsyncSQLAlchemyDBConnectionPool", description="类型")
-    infra: Infra = Field(default_factory=Infra, description="基础设施配置")
+    type: str = Field(default="AsyncSQLAlchemyDB", description="类型")
+    infra: InfraConfigsM = Field(default_factory=InfraConfigsM, description="基础设施配置")
     # 数据库类型 (mysql/postgresql/sqlite/oracle等)
     dialect: str
     # 驱动 (pymysql/psycopg2/cx_oracle等)

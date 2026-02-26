@@ -15,7 +15,7 @@ from pydantic_settings import (
 
 from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
-from .connect.database.schemas import DatabaseConfigsM
+from .connect.database.schemas import DBConfigsM
 from .connect.redis.schemas import RedisConfigsM
 from .app.schemas import AppConfigs
 
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
 
     cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
 
-    databases: Dict[str, DatabaseConfigsM] = Field(default_factory=dict, description="数据库配置")
+    databases: Dict[str, DBConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
     app: AppConfigs = Field(default_factory=AppConfigs, description="App应用配置")
 

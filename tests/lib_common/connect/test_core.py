@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from lib_common.connect.core.manager import ConnectionPoolManager
+from unittest.mock import Mock, patch
+from lib_common.connect.manager import ConnectionPoolManager
 from lib_common.connect.core.factory import ConnectionPoolFactory
 from lib_common.connect.core.schemas import Infra
 
