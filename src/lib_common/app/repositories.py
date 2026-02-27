@@ -2,13 +2,13 @@
 from typing import Generic, List, Any, TypeVar
 from abc import ABC, abstractmethod
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import T
-from ..connect.database.funcs import SQLALCHEMY_OPERATOR_MAP
 from ..connect.database.base import BaseModel
-from ..configs import loggers
+from ..connect.database.repository import AsyncBaseRepository
+from ..logger.configs import loggers
 
 run_logger = loggers.get_logger("run")
 
@@ -38,50 +38,23 @@ class IRepository(ABC, Generic[T]):
 M = TypeVar("M", bound=BaseModel)
 
 
-class BaseRepository(IRepository[M], Generic[M]):
+class AppRepository(IRepository[M], Generic[M]):
     """基础存储实现"""
-
-    # 支持的查询操作符映射
-    OPERATOR_MAP = SQLALCHEMY_OPERATOR_MAP
 
     def __init__(self, model_type: type[M]):
         self.model_type = model_type
 
-    @staticmethod
-    def _set_model_attr(model: M, entity: dict) -> M:
-        """
-        给模型动态设置属性
-        :param model: 模型对象
-        :param entity: 属性字典
-        :return:
-        """
-        for k, v in entity.items():
-            if not hasattr(model, k):
-                continue
-            setattr(model, k, v)
-        return model
-
     async def add(self, conn: AsyncSession, entity: dict, relation: dict = None, **kwargs) -> M:
         run_logger.debug(f"Add {self.model_type.__name__}")
-        _model = self.model_type(**entity)
-        # 动态设置关系属性
-        if relation:
-            _model = self._set_model_attr(_model, relation)
+        return await AsyncBaseRepository.insert_one(conn, self.model_type, entity, relation, **kwargs)
 
-        conn.add(_model)
-        await conn.flush()
-        return _model
-
-    async def delete(self, conn: AsyncSession, entity_id: Any, **kwargs) -> M | None:
+    async def delete(self, conn: AsyncSession, entity_id: Any, **kwargs) -> int:
         run_logger.debug(f"Delete {self.model_type.__name__}")
-        _model = await conn.get(self.model_type, entity_id)
-        if _model:
-            await conn.delete(_model)
-            await conn.flush()
-        return _model
+        return await AsyncBaseRepository.delete(conn, self.model_type, filters={"id": entity_id})
 
-    async def set(self, conn: AsyncSession, entity_id: Any, entity: dict, relation: dict = None, **kwargs) -> M | None:
+    async def set(self, conn: AsyncSession, entity_id: Any, entity: dict, relation: dict = None, **kwargs) -> int:
         run_logger.debug(f"Set {self.model_type.__name__}")
+        return await AsyncBaseRepository.update(conn, self.model_type, entity, relation, filters={"id": entity_id}, **kwargs)
         _model = await conn.get(self.model_type, entity_id)
         if not _model:
             return _model
@@ -144,50 +117,3 @@ class BaseRepository(IRepository[M], Generic[M]):
         result = await conn.execute(stmt)
         return list(result.scalars().unique().all())
 
-    def _filter_conditions(self, **kwargs) -> List:
-        """
-        获取过滤条件
-        :param kwargs:
-        :return:
-        """
-        conditions = []
-        for k, v in kwargs.items():
-            # 尝试匹配__操作
-            operator_found = False
-            for op, op_func in self.OPERATOR_MAP.items():
-                if op not in k:
-                    continue
-
-                if op != k[-len(op) :]:
-                    continue
-
-                bk = k[: -len(op)]
-                if not hasattr(self.model_type, bk):
-                    continue
-
-                column = getattr(self.model_type, bk)
-                conditions.append(op_func(column, v))
-                operator_found = True
-                break
-
-            if not operator_found and hasattr(self.model_type, k):
-                column = getattr(self.model_type, k)
-                conditions.append(column == v)
-
-        return conditions
-
-    def _sorted_conditions(self, **kwargs) -> List:
-        """
-        获取排序条件
-        """
-        conditions = []
-        for sort_field, descending in kwargs.items():
-            if not hasattr(self.model_type, sort_field):
-                continue
-
-            field = getattr(self.model_type, sort_field)
-            if descending == "desc":
-                conditions.append(desc(field))
-            else:
-                conditions.append(field)
-        return conditions

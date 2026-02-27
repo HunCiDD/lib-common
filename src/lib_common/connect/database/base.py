@@ -105,11 +105,11 @@ class DBInfra:
             }
         else:
             return {
-                "pool_pre_ping": True,      # 使用前检查连接是否有效
-                "pool_recycle": 300,        # 每5分钟回收连接(秒) - 防止服务器超时断开
-                "pool_size": 10,            # 连接池大小
-                "max_overflow": 20,         # 允许超过pool_size的连接数
-                "pool_timeout": 30,         # 获取连接超时时间(秒)
+                "pool_pre_ping": True,  # 使用前检查连接是否有效
+                "pool_recycle": 300,  # 每5分钟回收连接(秒) - 防止服务器超时断开
+                "pool_size": 10,  # 连接池大小
+                "max_overflow": 20,  # 允许超过pool_size的连接数
+                "pool_timeout": 30,  # 获取连接超时时间(秒)
                 "connect_args": {
                     "command_timeout": 60,  # 单个命令超时时间(秒)
                 },
@@ -152,12 +152,10 @@ class SQLAlchemyDBConnectionContext:
 
 @DBInfraFactory.register("SQLAlchemyDB")
 class SQLAlchemyDB(DBInfra, IDBInfra):
-
     def __init__(self, name: str, cm: DBConfigsM = None, **kwargs) -> None:
         super().__init__(name, cm, **kwargs)
         self.engine: Engine = create_engine(self.url, echo=self.cm.echo, **self.engine_configs)
         self.session_factory = sessionmaker(self.engine, autoflush=False)
-
 
     def get_connection(self) -> Session:
         session = self.session_factory()
@@ -221,4 +219,3 @@ class AsyncSQLAlchemyDB(DBInfra, IAsyncDBInfra):
     def connection(self) -> AsyncSQLAlchemyDBConnectionContext:
         """上下文管理器获取连接"""
         return AsyncSQLAlchemyDBConnectionContext(self)
-

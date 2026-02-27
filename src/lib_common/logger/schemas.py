@@ -10,6 +10,7 @@ from ..types import BoolType, PathType, UpperType, IntType
 
 class LoggerConfigsM(BaseModel):
     """日志器配置"""
+
     type: str | None = None
     sink: TextIOWrapper | PathType | None = None
     level: UpperType | None = "INFO"

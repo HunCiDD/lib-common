@@ -1,5 +1,5 @@
-from typing import Type, List, Dict, Any, Union, Optional
-from sqlalchemy import inspect, update, delete, select, insert, func, desc
+from typing import Type, List, Dict, Any
+from sqlalchemy import inspect, update, delete, select, insert, desc
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -93,7 +93,7 @@ class BaseRepository:
         session: Session,
         model_cls: Type[M],
         record: Dict[str, Any],
-        relations: Optional[Dict[str, Any]] = None,
+        relations: Dict[str, Any] | None = None,
     ) -> M:
         """
         插入单条记录
@@ -116,7 +116,7 @@ class BaseRepository:
         session: Session,
         model_cls: Type[M],
         records: List[Dict[str, Any]],
-        relations: Optional[List[Dict[str, Any]]] = None,
+        relations: List[Dict[str, Any]] | None = None,
     ) -> List[M]:
         """
         插入多条记录
@@ -145,10 +145,10 @@ class BaseRepository:
     def insert(
         session: Session,
         model_cls: Type[M],
-        records: Union[Dict[str, Any], List[Dict[str, Any]]],
-        relations: Union[Dict[str, Any], List[Dict[str, Any]], None] = None,
-        **kwargs
-    ) -> Union[M, List[M], None]:
+        records: Dict[str, Any] | List[Dict[str, Any]],
+        relations: Dict[str, Any] | List[Dict[str, Any]] | None = None,
+        **kwargs,
+    ) -> M | List[M] | None:
         """
         统一插入接口，自动识别单条或多条
         :param session: Session 实例
@@ -167,12 +167,7 @@ class BaseRepository:
             raise ValueError("records must be a dict or a list of dicts")
 
     @staticmethod
-    def update(
-        session: Session,
-        model_cls: Type[M],
-        filters: Dict[str, Any],
-        values: Dict[str, Any]
-    ) -> int:
+    def update(session: Session, model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any]) -> int:
         """
         根据条件更新记录（支持复杂过滤条件）
         :param session: Session 实例
@@ -189,21 +184,13 @@ class BaseRepository:
         if not conditions:
             raise ValueError("No valid filter conditions could be built from the provided filters")
 
-        stmt = (
-            update(model_cls)
-            .where(*conditions)
-            .values(values)
-        )
+        stmt = update(model_cls).where(*conditions).values(values)
         result = session.execute(stmt)
         session.flush()
         return result.rowcount
 
     @staticmethod
-    def delete(
-        session: Session,
-        model_cls: Type[M],
-        filters: Dict[str, Any]
-    ) -> int:
+    def delete(session: Session, model_cls: Type[M], filters: Dict[str, Any]) -> int:
         """
         根据条件删除记录（支持复杂过滤条件）
         :param session: Session 实例
@@ -229,8 +216,8 @@ class BaseRepository:
         session: Session,
         model_cls: Type[M],
         record: Dict[str, Any],
-        conflict_columns: Optional[List[str]] = None,
-        set_: Optional[Dict[str, Any]] = None,
+        conflict_columns: List[str] | None = None,
+        set_: Dict[str, Any] | None = None,
     ) -> M:
         """
         插入或更新单条记录（依赖数据库的 ON CONFLICT 功能，如 PostgreSQL）
@@ -250,8 +237,7 @@ class BaseRepository:
             conflict_target = primary_keys
             if len(primary_keys) == 1 and mapper.primary_key[0].autoincrement:
                 raise ValueError(
-                    "Model has a single autoincrement primary key. "
-                    "Please specify conflict_columns explicitly."
+                    "Model has a single autoincrement primary key. Please specify conflict_columns explicitly."
                 )
 
         stmt = insert(model_cls).values(record)
@@ -273,11 +259,7 @@ class BaseRepository:
         return result.scalar_one()
 
     @staticmethod
-    def get(
-        session: Session,
-        model_cls: Type[M],
-        pk: Any
-    ) -> Optional[M]:
+    def get(session: Session, model_cls: Type[M], pk: Any) -> M | None:
         """
         根据主键获取单条记录
         :param session: Session 实例
@@ -292,10 +274,10 @@ class BaseRepository:
     def list(
         session: Session,
         model_cls: Type[M],
-        filters: Optional[Dict[str, Any]] = None,
-        order_by: Optional[List[str]] = None,
+        filters: Dict[str, Any] | None = None,
+        order_by: List[str] | None = None,
         offset: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[M]:
         """
         条件查询，支持过滤、排序、分页
@@ -333,9 +315,6 @@ class BaseRepository:
         return result.scalars().all()
 
 
-
-
-
 class AsyncBaseRepository:
     """
     异步 SQLAlchemy 基础仓库类，提供通用的 CRUD 操作。
@@ -347,8 +326,8 @@ class AsyncBaseRepository:
         session: AsyncSession,
         model_cls: Type[M],
         record: Dict[str, Any],
-        relations: Optional[Dict[str, Any]] = None,
-        **kwargs
+        relations: Dict[str, Any] | None = None,
+        **kwargs,
     ) -> M:
         """
         插入单条记录
@@ -371,8 +350,8 @@ class AsyncBaseRepository:
         session: AsyncSession,
         model_cls: Type[M],
         records: List[Dict[str, Any]],
-        relations: Optional[List[Dict[str, Any]]] = None,
-        **kwargs
+        relations: List[Dict[str, Any]] | None = None,
+        **kwargs,
     ) -> List[M]:
         """
         插入多条记录
@@ -401,10 +380,10 @@ class AsyncBaseRepository:
     async def insert(
         session: AsyncSession,
         model_cls: Type[M],
-        records: Union[Dict[str, Any], List[Dict[str, Any]]],
-        relations: Union[Dict[str, Any], List[Dict[str, Any]], None] = None,
-        **kwargs
-    ) -> Union[M, List[M], None]:
+        records: Dict[str, Any] | List[Dict[str, Any]],
+        relations: Dict[str, Any] | List[Dict[str, Any]] | None = None,
+        **kwargs,
+    ) -> M | List[M] | None:
         """
         统一插入接口，自动识别单条或多条
         :param session: AsyncSession 实例
@@ -423,12 +402,7 @@ class AsyncBaseRepository:
             raise ValueError("records must be a dict or a list of dicts")
 
     @staticmethod
-    async def update(
-        session: AsyncSession,
-        model_cls: Type[M],
-        filters: Dict[str, Any],
-        values: Dict[str, Any]
-    ) -> int:
+    async def update(session: AsyncSession, model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any]) -> int:
         """
         根据条件更新记录（支持复杂过滤条件）
         :param session: AsyncSession 实例
@@ -445,21 +419,13 @@ class AsyncBaseRepository:
         if not conditions:
             raise ValueError("No valid filter conditions could be built from the provided filters")
 
-        stmt = (
-            update(model_cls)
-            .where(*conditions)
-            .values(values)
-        )
+        stmt = update(model_cls).where(*conditions).values(values)
         result = await session.execute(stmt)
         await session.flush()
         return result.rowcount
 
     @staticmethod
-    async def delete(
-        session: AsyncSession,
-        model_cls: Type[M],
-        filters: Dict[str, Any]
-    ) -> int:
+    async def delete(session: AsyncSession, model_cls: Type[M], filters: Dict[str, Any]) -> int:
         """
         根据条件删除记录（支持复杂过滤条件）
         :param session: AsyncSession 实例
@@ -485,9 +451,9 @@ class AsyncBaseRepository:
         session: AsyncSession,
         model_cls: Type[M],
         record: Dict[str, Any],
-        conflict_columns: Optional[List[str]] = None,
-        set_: Optional[Dict[str, Any]] = None,
-        **kwargs
+        conflict_columns: List[str] | None = None,
+        set_: Dict[str, Any] | None = None,
+        **kwargs,
     ) -> M:
         """
         插入或更新单条记录（依赖数据库的 ON CONFLICT 功能，如 PostgreSQL）
@@ -507,8 +473,7 @@ class AsyncBaseRepository:
             conflict_target = primary_keys
             if len(primary_keys) == 1 and mapper.primary_key[0].autoincrement:
                 raise ValueError(
-                    "Model has a single autoincrement primary key. "
-                    "Please specify conflict_columns explicitly."
+                    "Model has a single autoincrement primary key. Please specify conflict_columns explicitly."
                 )
 
         stmt = insert(model_cls).values(record)
@@ -530,11 +495,7 @@ class AsyncBaseRepository:
         return result.scalar_one()
 
     @staticmethod
-    async def get(
-        session: AsyncSession,
-        model_cls: Type[M],
-        pk: Any
-    ) -> Optional[M]:
+    async def get(session: AsyncSession, model_cls: Type[M], pk: Any) -> M | None:
         """
         根据主键获取单条记录
         :param session: AsyncSession 实例
@@ -549,10 +510,10 @@ class AsyncBaseRepository:
     async def list(
         session: AsyncSession,
         model_cls: Type[M],
-        filters: Optional[Dict[str, Any]] = None,
-        order_by: Optional[List[str]] = None,
+        filters: Dict[str, Any] | None = None,
+        order_by: List[str] | None = None,
         offset: int = 0,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[M]:
         """
         条件查询，支持过滤、排序、分页
@@ -588,5 +549,3 @@ class AsyncBaseRepository:
 
         result = await session.execute(stmt)
         return result.scalars().all()
-
-

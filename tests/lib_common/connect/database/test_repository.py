@@ -1,9 +1,8 @@
 import pytest
 import pytest_asyncio
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, func, select
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from typing import Dict, Any, List
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from lib_common.connect.database.base import BaseModel
 from lib_common.connect.database.repository import (
@@ -12,7 +11,6 @@ from lib_common.connect.database.repository import (
     set_model,
     build_filters,
     build_orders,
-    operators,
 )
 
 
@@ -171,20 +169,13 @@ class TestBaseRepository:
     def test_update(self, sync_session):
         """测试更新记录"""
         # 先插入一条记录
-        user = BaseRepository.insert_one(sync_session, User, {
-            "name": "Original",
-            "email": "original@example.com",
-            "age": 20
-        })
+        user = BaseRepository.insert_one(
+            sync_session, User, {"name": "Original", "email": "original@example.com", "age": 20}
+        )
         sync_session.commit()
 
         # 更新
-        affected = BaseRepository.update(
-            sync_session,
-            User,
-            {"id": user.id},
-            {"name": "Updated", "age": 30}
-        )
+        affected = BaseRepository.update(sync_session, User, {"id": user.id}, {"name": "Updated", "age": 30})
         assert affected == 1
         sync_session.commit()
 
@@ -196,20 +187,19 @@ class TestBaseRepository:
     def test_update_with_complex_filters(self, sync_session):
         """测试复杂过滤条件更新"""
         # 插入测试数据
-        BaseRepository.insert_many(sync_session, User, [
-            {"name": "Alice", "email": "alice1@example.com", "age": 20},
-            {"name": "Alice", "email": "alice2@example.com", "age": 25},
-            {"name": "Bob", "email": "bob@example.com", "age": 30},
-        ])
+        BaseRepository.insert_many(
+            sync_session,
+            User,
+            [
+                {"name": "Alice", "email": "alice1@example.com", "age": 20},
+                {"name": "Alice", "email": "alice2@example.com", "age": 25},
+                {"name": "Bob", "email": "bob@example.com", "age": 30},
+            ],
+        )
         sync_session.commit()
 
         # 更新所有 Alice
-        affected = BaseRepository.update(
-            sync_session,
-            User,
-            {"name": "Alice"},
-            {"age": 99}
-        )
+        affected = BaseRepository.update(sync_session, User, {"name": "Alice"}, {"age": 99})
         assert affected == 2
         sync_session.commit()
 
@@ -220,11 +210,9 @@ class TestBaseRepository:
 
     def test_delete(self, sync_session):
         """测试删除记录"""
-        user = BaseRepository.insert_one(sync_session, User, {
-            "name": "ToDelete",
-            "email": "delete@example.com",
-            "age": 99
-        })
+        user = BaseRepository.insert_one(
+            sync_session, User, {"name": "ToDelete", "email": "delete@example.com", "age": 99}
+        )
         sync_session.commit()
 
         affected = BaseRepository.delete(sync_session, User, {"id": user.id})
@@ -236,11 +224,9 @@ class TestBaseRepository:
 
     def test_get(self, sync_session):
         """测试根据主键获取记录"""
-        user = BaseRepository.insert_one(sync_session, User, {
-            "name": "GetTest",
-            "email": "get@example.com",
-            "age": 100
-        })
+        user = BaseRepository.insert_one(
+            sync_session, User, {"name": "GetTest", "email": "get@example.com", "age": 100}
+        )
         sync_session.commit()
 
         fetched = BaseRepository.get(sync_session, User, user.id)
@@ -255,11 +241,15 @@ class TestBaseRepository:
     def test_list(self, sync_session):
         """测试列表查询"""
         # 插入测试数据
-        BaseRepository.insert_many(sync_session, User, [
-            {"name": "Alice", "email": "alice@example.com", "age": 20},
-            {"name": "Bob", "email": "bob@example.com", "age": 30},
-            {"name": "Charlie", "email": "charlie@example.com", "age": 40},
-        ])
+        BaseRepository.insert_many(
+            sync_session,
+            User,
+            [
+                {"name": "Alice", "email": "alice@example.com", "age": 20},
+                {"name": "Bob", "email": "bob@example.com", "age": 30},
+                {"name": "Charlie", "email": "charlie@example.com", "age": 40},
+            ],
+        )
         sync_session.commit()
 
         # 无过滤
@@ -342,19 +332,14 @@ class TestAsyncBaseRepository:
     async def test_update(self, async_session):
         """测试异步更新记录"""
         # 先插入一条记录
-        user = await AsyncBaseRepository.insert_one(async_session, User, {
-            "name": "Original",
-            "email": "original@example.com",
-            "age": 20
-        })
+        user = await AsyncBaseRepository.insert_one(
+            async_session, User, {"name": "Original", "email": "original@example.com", "age": 20}
+        )
         await async_session.commit()
 
         # 更新
         affected = await AsyncBaseRepository.update(
-            async_session,
-            User,
-            {"id": user.id},
-            {"name": "Updated", "age": 30}
+            async_session, User, {"id": user.id}, {"name": "Updated", "age": 30}
         )
         assert affected == 1
         await async_session.commit()
@@ -367,11 +352,9 @@ class TestAsyncBaseRepository:
     @pytest.mark.asyncio
     async def test_delete(self, async_session):
         """测试异步删除记录"""
-        user = await AsyncBaseRepository.insert_one(async_session, User, {
-            "name": "ToDelete",
-            "email": "delete@example.com",
-            "age": 99
-        })
+        user = await AsyncBaseRepository.insert_one(
+            async_session, User, {"name": "ToDelete", "email": "delete@example.com", "age": 99}
+        )
         await async_session.commit()
 
         affected = await AsyncBaseRepository.delete(async_session, User, {"id": user.id})
@@ -384,11 +367,9 @@ class TestAsyncBaseRepository:
     @pytest.mark.asyncio
     async def test_get(self, async_session):
         """测试异步根据主键获取记录"""
-        user = await AsyncBaseRepository.insert_one(async_session, User, {
-            "name": "GetTest",
-            "email": "get@example.com",
-            "age": 100
-        })
+        user = await AsyncBaseRepository.insert_one(
+            async_session, User, {"name": "GetTest", "email": "get@example.com", "age": 100}
+        )
         await async_session.commit()
 
         fetched = await AsyncBaseRepository.get(async_session, User, user.id)
@@ -404,11 +385,15 @@ class TestAsyncBaseRepository:
     async def test_list(self, async_session):
         """测试异步列表查询"""
         # 插入测试数据
-        await AsyncBaseRepository.insert_many(async_session, User, [
-            {"name": "Alice", "email": "alice@example.com", "age": 20},
-            {"name": "Bob", "email": "bob@example.com", "age": 30},
-            {"name": "Charlie", "email": "charlie@example.com", "age": 40},
-        ])
+        await AsyncBaseRepository.insert_many(
+            async_session,
+            User,
+            [
+                {"name": "Alice", "email": "alice@example.com", "age": 20},
+                {"name": "Bob", "email": "bob@example.com", "age": 30},
+                {"name": "Charlie", "email": "charlie@example.com", "age": 40},
+            ],
+        )
         await async_session.commit()
 
         # 无过滤

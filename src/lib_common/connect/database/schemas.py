@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field, ConfigDict
 
 from ...types import PathType

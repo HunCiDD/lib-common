@@ -8,4 +8,4 @@ app_db = databases.get_database("app")
 local_db = databases.get_database("local")
 
 if __name__ == "__main__":
-    run_logger.info(f"xxxx")
+    run_logger.info("xxxx")

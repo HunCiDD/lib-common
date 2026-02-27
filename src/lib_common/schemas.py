@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, Field
 
 from .types import HostType, PortType, UsernameType, PasswordType
 
@@ -22,6 +22,3 @@ class AccountSafe(BaseModel):
 
 # 主机模型
 class Host(Address, Account): ...
-
-
-

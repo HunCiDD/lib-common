@@ -43,5 +43,3 @@ class DBInfraManager(metaclass=SingletonMeta):
             raise ValueError("settings cannot be empty")
         cm = DBConfigsM(**settings)
         self._add_database(key=key, cm=cm)
-
-

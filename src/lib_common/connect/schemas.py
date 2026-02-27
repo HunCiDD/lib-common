@@ -6,10 +6,10 @@ from ..schemas import Host
 
 # 基础设施
 class InfraConfigsM(Host):
-    name: str = ""          # 名称
-    category: str = ""      # 分类
-    version: str = ""       # 版本
-    description: str = ""   # 描述
+    name: str = ""  # 名称
+    category: str = ""  # 分类
+    version: str = ""  # 版本
+    description: str = ""  # 描述
 
     model_config = ConfigDict(extra="allow")
 

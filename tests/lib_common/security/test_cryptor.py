@@ -12,7 +12,7 @@ class TestCryptor:
         config = CryptorRootConfigsM(
             material=SecretStr("test_material_12345678901234567890"),  # 长字符串
             salt="test_salt_12345678901234567890",
-            secret=SecretStr("test_secret_12345678901234567890")
+            secret=SecretStr("test_secret_12345678901234567890"),
         )
         # 使用一个简单的 work_key（至少需要一定长度）
         work_key = b"0123456789abcdef"  # 16 bytes for AES
