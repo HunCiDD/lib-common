@@ -1,6 +1,6 @@
 from pydantic import ConfigDict
 
-from ..core.schemas import Host
+from ..schemas import Host
 
 
 # # ------------------- Redis Configuration -------------------

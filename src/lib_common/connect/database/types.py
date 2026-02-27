@@ -1,9 +1,13 @@
-from typing import Annotated
+from typing import Annotated, TypeVar
 
 from sqlalchemy import String
 from sqlalchemy.orm import mapped_column
 
-from lib_common.data.utils.generator import UuidGenerator
+from ...data.utils.generator import UuidGenerator
+from .base import BaseModel
+
+
+M = TypeVar("M", bound=BaseModel)
 
 
 PKType = Annotated[

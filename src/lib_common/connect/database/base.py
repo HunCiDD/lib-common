@@ -1,12 +1,14 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Generic
+from abc import ABC, abstractmethod
 
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
+from ...types import T
+from ...designs.factory import RegisterFactory
 from ...data.utils.validates import validate_path
-from ..base import IInfra, IAsyncInfra
 from .schemas import DBConfigsM
 
 
@@ -41,12 +43,38 @@ class BaseModel(Base):
         return _dict
 
 
+# 同步设施
+class IDBInfra(ABC, Generic[T]):
+    @abstractmethod
+    def get_connection(self) -> T: ...
+
+    @abstractmethod
+    def release_connection(self, conn: T): ...
+
+    def connection(self): ...
+
+
+# 异步设施
+class IAsyncDBInfra(ABC, Generic[T]):
+    @abstractmethod
+    async def get_connection(self) -> T: ...
+
+    @abstractmethod
+    async def release_connection(self, conn: T): ...
+
+    async def connection(self): ...
+
+
+# 基础设施工厂
+class DBInfraFactory(RegisterFactory[IDBInfra | IAsyncDBInfra]):
+    _map = {}
+
+
 class DBInfra:
-    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
+    def __init__(self, name: str, cm: DBConfigsM = None, **kwargs) -> None:
         self.name = name
-        self.configs = configs or {}
         self.kwargs = kwargs
-        self.cm = DBConfigsM(**self.configs)
+        self.cm = cm
 
     @property
     def url(self) -> str:
@@ -122,10 +150,11 @@ class SQLAlchemyDBConnectionContext:
         return False
 
 
-class SQLAlchemyDB(DBInfra, IInfra):
+@DBInfraFactory.register("SQLAlchemyDB")
+class SQLAlchemyDB(DBInfra, IDBInfra):
 
-    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
-        super().__init__(name, configs, **kwargs)
+    def __init__(self, name: str, cm: DBConfigsM = None, **kwargs) -> None:
+        super().__init__(name, cm, **kwargs)
         self.engine: Engine = create_engine(self.url, echo=self.cm.echo, **self.engine_configs)
         self.session_factory = sessionmaker(self.engine, autoflush=False)
 
@@ -174,9 +203,10 @@ class AsyncSQLAlchemyDBConnectionContext:
         return False
 
 
-class AsyncSQLAlchemyDB(DBInfra, IAsyncInfra):
-    def __init__(self, name: str, configs: dict = None, **kwargs) -> None:
-        super().__init__(name, configs, **kwargs)
+@DBInfraFactory.register("AsyncSQLAlchemyDB")
+class AsyncSQLAlchemyDB(DBInfra, IAsyncDBInfra):
+    def __init__(self, name: str, cm: DBConfigsM = None, **kwargs) -> None:
+        super().__init__(name, cm, **kwargs)
         self.engine: AsyncEngine = create_async_engine(self.url, echo=self.cm.echo)
         self.session_factory = async_sessionmaker(
             self.engine, autoflush=False, expire_on_commit=False, class_=AsyncSession
@@ -191,3 +221,4 @@ class AsyncSQLAlchemyDB(DBInfra, IAsyncInfra):
     def connection(self) -> AsyncSQLAlchemyDBConnectionContext:
         """上下文管理器获取连接"""
         return AsyncSQLAlchemyDBConnectionContext(self)
+

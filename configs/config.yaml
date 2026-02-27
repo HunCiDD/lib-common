@@ -1,5 +1,5 @@
 app:
-  name: ai-life-v2
+  name: lib-common
   version: v1.0
   host: 127.0.0.1
   port: 8080
@@ -45,8 +45,8 @@ cryptors:
 
 # 数据库配置
 databases:
-  primary:
-    type: AsyncSQLAlchemyDBConnectionPool
+  app:
+    type: AsyncSQLAlchemyDB
     infra:
       host: 127.0.0.1
       port: 5432
@@ -54,7 +54,17 @@ databases:
       password: hdd12345
     dialect: postgresql
     driver: asyncpg
-    database: ai-life
+    database: appc-test
+  local:
+    type: SQLAlchemyDB
+    infra:
+      host: 127.0.0.1
+      port: 5432
+      username: postgres
+      password: hdd12345
+    dialect: postgresql
+    driver: asyncpg
+    database: appc-test
 
 
 

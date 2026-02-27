@@ -1,3 +1,9 @@
+from pydantic import ConfigDict
+
+from ..data.utils.generator import UuidGenerator
+from ..schemas import Host
+
+
 # 基础设施
 class InfraConfigsM(Host):
     name: str = ""          # 名称

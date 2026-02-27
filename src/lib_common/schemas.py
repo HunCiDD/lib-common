@@ -12,7 +12,7 @@ class Address(BaseModel):
 # 账号模型
 class Account(BaseModel):
     username: str | None = None
-    password: SecretStr | None = None
+    password: str | None = None
 
 
 class AccountSafe(BaseModel):
