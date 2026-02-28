@@ -7,7 +7,7 @@ __all__ = [
     "StringConverter",
 ]
 
-from datetime import datetime
+from datetime import datetime, date
 
 from pandas import DataFrame
 
@@ -63,6 +63,11 @@ class StringConverter(ToIntConvertMixin):
     def to_datetime(data: str, **kwargs) -> datetime:
         _format = kwargs.get("format", "%Y-%m-%d %H:%M:%S")
         return datetime.strptime(data, _format)
+
+    @convert_exception
+    @staticmethod
+    def to_date(data: str, **kwargs) -> date:
+        return StringConverter.to_datetime(data, **kwargs).date()
 
     @convert_exception
     @staticmethod

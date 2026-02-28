@@ -277,12 +277,12 @@ class TestBaseRepository:
 
     def test_update_empty_filters_raises(self, sync_session):
         """测试空过滤器引发异常"""
-        with pytest.raises(ValueError, match="Filters cannot be empty"):
+        with pytest.raises(ValueError, match="filters or values is empty"):
             BaseRepository.update(sync_session, User, {}, {"name": "test"})
 
     def test_delete_empty_filters_raises(self, sync_session):
         """测试空过滤器引发异常"""
-        with pytest.raises(ValueError, match="Filters cannot be empty"):
+        with pytest.raises(ValueError, match="filters is empty"):
             BaseRepository.delete(sync_session, User, {})
 
 
@@ -422,13 +422,13 @@ class TestAsyncBaseRepository:
     @pytest.mark.asyncio
     async def test_update_empty_filters_raises(self, async_session):
         """测试异步空过滤器引发异常"""
-        with pytest.raises(ValueError, match="Filters cannot be empty"):
+        with pytest.raises(ValueError, match="filters or values is empty"):
             await AsyncBaseRepository.update(async_session, User, {}, {"name": "test"})
 
     @pytest.mark.asyncio
     async def test_delete_empty_filters_raises(self, async_session):
         """测试异步空过滤器引发异常"""
-        with pytest.raises(ValueError, match="Filters cannot be empty"):
+        with pytest.raises(ValueError, match="filters is empty"):
             await AsyncBaseRepository.delete(async_session, User, {})
 
 
