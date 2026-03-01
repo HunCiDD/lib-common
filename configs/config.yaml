@@ -65,7 +65,17 @@ databases:
     dialect: postgresql
     driver: asyncpg
     database: appc-test
-
+  test:
+    type: SQLAlchemyDB
+    infra:
+      host: 127.0.0.1
+      port: 5432
+      username:
+      password:
+    dialect: sqlite
+    file: ":memory:"
+    database: appc-test
+    echo: false
 
 
 redis:

@@ -1,4 +1,4 @@
-from typing import Type, List, Dict, Any, Iterable
+from typing import Type, List, Dict, Any, Iterable, Set
 from sqlalchemy import inspect, update, delete, select, desc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -117,7 +117,7 @@ def build_order_conditions(model_cls: Type[M], orders: Dict[str, Any]) -> list:
     return conditions
 
 
-def build_stmt_insert(model_cls: Type[M], values: Dict[str, Any] | List[Dict[str, Any]], returning: bool = False):
+def build_stmt_insert(model_cls: Type[M], values: Dict[str, Any] | List[Dict[str, Any]], returning: bool = False) -> Any:
     """
     构建插入stmt
     :param model_cls: 模型类
@@ -135,7 +135,7 @@ def build_stmt_insert(model_cls: Type[M], values: Dict[str, Any] | List[Dict[str
     return stmt
 
 
-def build_stmt_update(model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any], returning: bool = False):
+def build_stmt_update(model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any], returning: bool = False) -> Any:
     """
     构建插入stmt
     :param model_cls: 模型类
@@ -158,7 +158,7 @@ def build_stmt_update(model_cls: Type[M], filters: Dict[str, Any], values: Dict[
     return stmt
 
 
-def build_stmt_delete(model_cls: Type[M], filters: Dict[str, Any], returning: bool = False):
+def build_stmt_delete(model_cls: Type[M], filters: Dict[str, Any], returning: bool = False) -> Any:
     """
     构建删除stmt
     :param model_cls: 模型类
@@ -184,15 +184,17 @@ def build_stmt_upsert(model_cls: Type[M],
                       values: Dict[str, Any] | List[Dict[str, Any]],
                       conflict_columns: List[str] | None = None,
                       set_: Dict[str, Any] | None = None,
-                      returning: bool = False):
+                      returning: bool = False) -> Any:
     """
+    构建 upsert (插入或更新) stmt，使用 PostgreSQL 的 ON CONFLICT 功能
 
-    :param model_cls:
-    :param values:
-    :param conflict_columns:
-    :param set_:
-    :param returning:
-    :return:
+    :param model_cls: 模型类
+    :param values: 插入数据，可以是单条字典或多条字典列表
+    :param conflict_columns: 冲突检测的列名列表，通常为唯一约束列。
+                            如果为 None，则使用主键作为冲突目标。
+    :param set_: 自定义更新字典。如果为 None，则自动排除冲突列后更新所有其他列。
+    :param returning: 是否返回插入/更新的对象
+    :return: 构建好的 SQLAlchemy upsert 语句
     """
     mapper = inspect(model_cls)
     primary_keys = [col.name for col in mapper.primary_key]
@@ -224,7 +226,7 @@ def build_stmt_select(model_cls: Type[M],
                       filters: Dict[str, Any] = None,
                       orders: Dict[str, Any] = None,
                       offset: int = 0,
-                      limit: int = 100):
+                      limit: int = 100) -> Any:
     """
     构建查询stmt
     :param model_cls: 模型类
@@ -260,7 +262,7 @@ class BaseRepository:
         model_cls: Type[M],
         values: Dict[str, Any] | List[Dict[str, Any]],
         returning: bool = True
-    ) -> int | M | List[M] | None:
+    ) -> Any:
         """
         统一插入接口，自动识别单条或多条
         :param session: Session 实例
@@ -280,52 +282,6 @@ class BaseRepository:
                 return scalars
         else:
             return result.rowcount
-
-    @staticmethod
-    def insert_one(
-        session: Session,
-        model_cls: Type[M],
-        record: Dict[str, Any],
-        relations: Dict[str, Any] | None = None
-    ) -> M:
-        """
-        插入单条记录（兼容旧接口）
-        :param session: Session 实例
-        :param model_cls: 模型类
-        :param record: 单条数据字典
-        :param relations: 关联字段（可选）
-        :return: 插入后的实例
-        """
-        # 使用 insert 方法，总是返回模型实例
-        result = BaseRepository.insert(session, model_cls, record, returning=True)
-        if isinstance(result, list):
-            return result[0]
-        else:
-            # result 应该是 M
-            return result
-
-    @staticmethod
-    def insert_many(
-        session: Session,
-        model_cls: Type[M],
-        records: List[Dict[str, Any]],
-        relations: List[Dict[str, Any]] | None = None
-    ) -> List[M]:
-        """
-        插入多条记录（兼容旧接口）
-        :param session: Session 实例
-        :param model_cls: 模型类
-        :param records: 多条数据字典列表
-        :param relations: 关联字段列表（可选）
-        :return: 插入后的实例列表
-        """
-        # 使用 insert 方法，总是返回模型实例列表
-        result = BaseRepository.insert(session, model_cls, records, returning=True)
-        if isinstance(result, list):
-            return result
-        else:
-            # 理论上不会发生，因为 records 是列表
-            return []
 
     @staticmethod
     def update(session: Session, model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any]) -> int:
@@ -401,7 +357,7 @@ class BaseRepository:
         session: Session,
         model_cls: Type[M],
         filters: Dict[str, Any] | None = None,
-        order_by: List[str] | None = None,
+        orders: Dict[str, Any] | None = None,
         offset: int = 0,
         limit: int = 100,
     ) -> List[M]:
@@ -410,241 +366,13 @@ class BaseRepository:
         :param session: Session 实例
         :param model_cls: 模型类
         :param filters: 过滤条件字典（支持操作符后缀，如 {"id__in": [1,2,3], "name__like": "test"}）
-        :param order_by: 排序字段列表，格式如 ["id", "name desc", "created_at asc"]
+        :param orders: 排序字段列表，格式如 {"id" "desc"}
         :param offset: 偏移量
         :param limit: 返回条数
         :return: 模型实例列表
         """
-        # 将 order_by 列表转换为 orders 字典
-        orders = None
-        if order_by:
-            orders = {}
-            for expr in order_by:
-                expr = expr.strip()
-                if expr.endswith(" desc"):
-                    col_name = expr[:-5]
-                    orders[col_name] = "desc"
-                elif expr.endswith(" asc"):
-                    col_name = expr[:-4]
-                    orders[col_name] = "asc"
-                else:
-                    orders[expr] = "asc"
+        # 将 order_by 列表转换为 orders 字
 
         stmt = build_stmt_select(model_cls, filters, orders, offset, limit)
         result = session.execute(stmt)
         return result.scalars().all()
-
-
-class AsyncBaseRepository:
-    """
-    异步 SQLAlchemy 基础仓库类，提供通用的 CRUD 操作。
-    所有方法均不自动提交事务，由调用方控制 session.commit()。
-    """
-
-    @staticmethod
-    async def insert(
-        session: AsyncSession,
-        model_cls: Type[M],
-        records: Dict[str, Any] | List[Dict[str, Any]],
-        relations: Dict[str, Any] | List[Dict[str, Any]] | None = None,
-        returning: bool = True
-    ) -> M | List[M] | int | None:
-        """
-        统一插入接口，自动识别单条或多条
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param records: 单条数据字典或字典列表
-        :param relations: 对应的关联字段（单条或列表），如果提供则使用旧逻辑（to_model/to_models）
-        :param returning: 是否返回插入的实例，False 时返回影响行数
-        :return: 插入后的实例或实例列表，或影响行数
-        """
-        # 如果提供了 relations 参数，则使用旧逻辑保持兼容
-        if relations is not None:
-            if isinstance(records, dict):
-                if isinstance(relations, list):
-                    raise ValueError("relations should be dict, when records is dict")
-                _model = to_model(model_cls, records, relations)
-                session.add(_model)
-                await session.flush()
-                return _model
-            elif isinstance(records, list):
-                if isinstance(relations, dict):
-                    raise ValueError("relations should be list, when records is list")
-                _models = to_models(model_cls, records, relations)
-                session.add_all(_models)
-                await session.flush()
-                return _models
-            else:
-                raise ValueError("records must be a dict or a list of dicts")
-
-        # 使用 build_stmt_insert 新逻辑
-        stmt = build_stmt_insert(model_cls, records, returning=returning)
-        result = await session.execute(stmt)
-        await session.flush()
-        if returning:
-            scalars = result.scalars().all()
-            if isinstance(records, dict):
-                return scalars[0] if scalars else None
-            else:
-                return scalars
-        else:
-            return result.rowcount
-
-    @staticmethod
-    async def insert_one(
-        session: AsyncSession,
-        model_cls: Type[M],
-        record: Dict[str, Any],
-        relations: Dict[str, Any] | None = None
-    ) -> M:
-        """
-        插入单条记录（兼容旧接口）
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param record: 单条数据字典
-        :param relations: 关联字段（可选）
-        :return: 插入后的实例
-        """
-        # 使用 insert 方法，总是返回模型实例
-        result = await AsyncBaseRepository.insert(session, model_cls, record, relations=relations, returning=True)
-        if isinstance(result, list):
-            return result[0]
-        else:
-            # result 应该是 M
-            return result
-
-    @staticmethod
-    async def insert_many(
-        session: AsyncSession,
-        model_cls: Type[M],
-        records: List[Dict[str, Any]],
-        relations: List[Dict[str, Any]] | None = None
-    ) -> List[M]:
-        """
-        插入多条记录（兼容旧接口）
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param records: 多条数据字典列表
-        :param relations: 关联字段列表（可选）
-        :return: 插入后的实例列表
-        """
-        # 使用 insert 方法，总是返回模型实例列表
-        result = await AsyncBaseRepository.insert(session, model_cls, records, relations=relations, returning=True)
-        if isinstance(result, list):
-            return result
-        else:
-            # 理论上不会发生，因为 records 是列表
-            return []
-
-
-    @staticmethod
-    async def update(session: AsyncSession, model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any]) -> int:
-        """
-        根据条件更新记录（支持复杂过滤条件）
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param filters: 过滤条件字典，支持操作符后缀（如 {"id__in": [1,2,3], "name__like": "test"}）
-        :param values: 待更新的字段字典
-        :return: 影响的行数
-        :raises ValueError: 如果 filters 为空或无法构建有效条件
-        """
-        stmt = build_stmt_update(model_cls, filters, values, returning=False)
-        result = await session.execute(stmt)
-        await session.flush()
-        return result.rowcount
-
-    @staticmethod
-    async def delete(session: AsyncSession, model_cls: Type[M], filters: Dict[str, Any]) -> int:
-        """
-        根据条件删除记录（支持复杂过滤条件）
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param filters: 过滤条件字典，支持操作符后缀（如 {"id__in": [1,2,3], "name__like": "test"}）
-        :return: 影响的行数
-        :raises ValueError: 如果 filters 为空或无法构建有效条件
-        """
-        stmt = build_stmt_delete(model_cls, filters, returning=False)
-        result = await session.execute(stmt)
-        await session.flush()
-        return result.rowcount
-
-    @staticmethod
-    async def upsert(
-        session: AsyncSession,
-        model_cls: Type[M],
-        records: Dict[str, Any] | List[Dict[str, Any]],
-        conflict_columns: List[str] | None = None,
-        set_: Dict[str, Any] | None = None,
-    ) -> M | List[M]:
-        """
-        插入或更新单条或多条记录（依赖数据库的 ON CONFLICT 功能，如 PostgreSQL）
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param records: 单条数据字典或字典列表
-        :param conflict_columns: 冲突检测的列名列表（通常为唯一约束列）
-        :param set_: 自定义更新字典，若为 None 则自动排除冲突列后更新所有其他列
-        :return: 插入或更新后的模型实例或实例列表（通过 RETURNING 获取）
-        """
-        stmt = build_stmt_upsert(model_cls, records, conflict_columns, set_, returning=True)
-        result = await session.execute(stmt)
-        await session.flush()
-        scalars = result.scalars().all()
-        if isinstance(records, dict):
-            return scalars[0] if scalars else None
-        else:
-            return scalars
-
-    @staticmethod
-    async def get(session: AsyncSession, model_cls: Type[M], pk: Any) -> M | None:
-        """
-        根据主键获取单条记录
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param pk: 主键值
-        :return: 模型实例或 None
-        """
-        run_logger.debug(f"Get {model_cls.__name__} by primary key")
-        return await session.get(model_cls, pk)
-
-    @staticmethod
-    async def list(
-        session: AsyncSession,
-        model_cls: Type[M],
-        filters: Dict[str, Any] | None = None,
-        order_by: List[str] | None = None,
-        offset: int = 0,
-        limit: int = 100,
-    ) -> List[M]:
-        """
-        条件查询，支持过滤、排序、分页
-        :param session: AsyncSession 实例
-        :param model_cls: 模型类
-        :param filters: 过滤条件字典（支持操作符后缀，如 {"id__in": [1,2,3], "name__like": "test"}）
-        :param order_by: 排序字段列表，格式如 ["id", "name desc", "created_at asc"]
-        :param offset: 偏移量
-        :param limit: 返回条数
-        :return: 模型实例列表
-        """
-        # 将 order_by 列表转换为 orders 字典
-        orders = None
-        if order_by:
-            orders = {}
-            for expr in order_by:
-                expr = expr.strip()
-                if expr.endswith(" desc"):
-                    col_name = expr[:-5]
-                    orders[col_name] = "desc"
-                elif expr.endswith(" asc"):
-                    col_name = expr[:-4]
-                    orders[col_name] = "asc"
-                else:
-                    orders[expr] = "asc"
-
-        stmt = build_stmt_select(model_cls, filters, orders, offset, limit)
-        result = await session.execute(stmt)
-        return result.scalars().all()
-
-
-# 向后兼容的别名
-build_filters = build_filter_conditions
-build_orders = build_order_conditions

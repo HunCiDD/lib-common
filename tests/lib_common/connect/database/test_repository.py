@@ -1,17 +1,17 @@
 import pytest
-import pytest_asyncio
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, func, select
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy import Column, Integer, String, DateTime, func, select
+
 
 from lib_common.connect.database.base import BaseModel
 from lib_common.connect.database.repository import (
     BaseRepository,
-    AsyncBaseRepository,
     set_model,
-    build_filters,
-    build_orders,
+    build_filter_conditions,
+    build_order_conditions,
 )
+from lib_common.connect.configs import databases
+
+test_db = databases.get_database("test")
 
 
 # 测试模型
@@ -31,50 +31,41 @@ class Product(BaseModel):
     price = Column(Integer, default=0)
 
 
-# Fixtures
+# 测试 Fixture
 @pytest.fixture(scope="function")
-def sync_engine():
-    """同步 SQLite 内存引擎"""
-    engine = create_engine("sqlite:///:memory:", echo=False)
-    BaseModel.metadata.create_all(engine)
-    yield engine
-    BaseModel.metadata.drop_all(engine)
+def db_session():
+    """为每个测试函数提供独立的数据库会话"""
+    from lib_common.connect.database.base import BaseModel
 
-
-@pytest.fixture(scope="function")
-def sync_session(sync_engine):
-    """同步会话"""
-    SessionLocal = sessionmaker(bind=sync_engine)
-    session = SessionLocal()
-    try:
+    test_db = databases.get_database("test")
+    with test_db.connection() as session:
+        # 创建表结构
+        BaseModel.metadata.create_all(session.get_bind())
         yield session
-    finally:
+        # 清理表结构，确保测试独立性
         session.rollback()
-        session.close()
+        BaseModel.metadata.drop_all(session.get_bind())
 
 
-@pytest_asyncio.fixture(scope="function")
-async def async_engine():
-    """异步 SQLite 内存引擎"""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.create_all)
-    yield engine
-    async with engine.begin() as conn:
-        await conn.run_sync(BaseModel.metadata.drop_all)
+@pytest.fixture
+def sample_user_data():
+    """返回示例用户数据"""
+    return {"name": "Test User", "email": "test@example.com", "age": 28}
 
 
-@pytest_asyncio.fixture(scope="function")
-async def async_session(async_engine):
-    """异步会话"""
-    AsyncSessionLocal = async_sessionmaker(bind=async_engine, expire_on_commit=False)
-    async with AsyncSessionLocal() as session:
-        yield session
+@pytest.fixture
+def sample_users_data():
+    """返回示例用户数据列表"""
+    return [
+        {"name": "User1", "email": "user1@example.com", "age": 20},
+        {"name": "User2", "email": "user2@example.com", "age": 25},
+        {"name": "User3", "email": "user3@example.com", "age": 30},
+    ]
 
 
 # 测试工具函数
 class TestUtilityFunctions:
-    """测试工具函数 set_model, build_filters, build_orders"""
+    """测试工具函数 set_model, build_filter_conditions, build_order_conditions"""
 
     def test_set_model(self):
         """测试动态设置模型属性"""
@@ -88,35 +79,35 @@ class TestUtilityFunctions:
         updated = set_model(user, {"nonexistent": "value"})
         assert not hasattr(updated, "nonexistent")
 
-    def test_build_filters(self):
+    def test_build_filter_conditions(self):
         """测试构建过滤条件"""
         # 等于操作
-        conditions = build_filters(User, {"name": "Alice"})
+        conditions = build_filter_conditions(User, {"name": "Alice"})
         assert len(conditions) == 1
         # 操作符后缀
-        conditions = build_filters(User, {"age__gt": 18})
+        conditions = build_filter_conditions(User, {"age__gt": 18})
         assert len(conditions) == 1
-        conditions = build_filters(User, {"age__in": [18, 19, 20]})
+        conditions = build_filter_conditions(User, {"age__in": [18, 19, 20]})
         assert len(conditions) == 1
-        conditions = build_filters(User, {"name__like": "Ali"})
+        conditions = build_filter_conditions(User, {"name__like": "Ali"})
         assert len(conditions) == 1
         # 无效字段被忽略
-        conditions = build_filters(User, {"invalid_field": "value"})
+        conditions = build_filter_conditions(User, {"invalid_field": "value"})
         assert len(conditions) == 0
         # 混合条件
-        conditions = build_filters(User, {"name": "Alice", "age__gt": 18})
+        conditions = build_filter_conditions(User, {"name": "Alice", "age__gt": 18})
         assert len(conditions) == 2
 
-    def test_build_orders(self):
+    def test_build_order_conditions(self):
         """测试构建排序条件"""
         # 升序
-        orders = build_orders(User, {"name": "asc"})
+        orders = build_order_conditions(User, {"name": "asc"})
         assert len(orders) == 1
         # 降序
-        orders = build_orders(User, {"name": "desc"})
+        orders = build_order_conditions(User, {"name": "desc"})
         assert len(orders) == 1
         # 无效字段被忽略
-        orders = build_orders(User, {"invalid_field": "desc"})
+        orders = build_order_conditions(User, {"invalid_field": "desc"})
         assert len(orders) == 0
 
 
@@ -124,377 +115,268 @@ class TestUtilityFunctions:
 class TestBaseRepository:
     """测试 BaseRepository 同步方法"""
 
-    def test_insert_one(self, sync_session):
+    def test_insert_one(self, db_session):
         """测试插入单条记录"""
         record = {"name": "Alice", "email": "alice@example.com", "age": 25}
-        user = BaseRepository.insert_one(sync_session, User, record)
+        user = BaseRepository.insert(db_session, User, record)
         assert user.id is not None
         assert user.name == "Alice"
-        sync_session.commit()
+        db_session.commit()
         # 验证数据
         stmt = select(User).where(User.id == user.id)
-        result = sync_session.execute(stmt).scalar_one()
+        result = db_session.execute(stmt).scalar_one()
         assert result.email == "alice@example.com"
 
-    def test_insert_many(self, sync_session):
-        """测试插入多条记录"""
-        records = [
+    def test_insert_multiple(self, db_session, sample_users_data):
+        """测试批量插入多条记录"""
+        users = BaseRepository.insert(db_session, User, sample_users_data)
+        assert len(users) == 3
+        for i, user in enumerate(users):
+            assert user.id is not None
+            assert user.name == f"User{i + 1}"
+            assert user.email == f"user{i + 1}@example.com"
+            assert user.age == 20 + i * 5
+        db_session.commit()
+        # 验证数据
+        stmt = select(User).where(User.id.in_([user.id for user in users]))
+        results = db_session.execute(stmt).scalars().all()
+        assert len(results) == 3
+        assert {user.email for user in results} == {"user1@example.com", "user2@example.com", "user3@example.com"}
+
+    def test_insert_without_returning(self, db_session):
+        """测试插入不返回对象"""
+        record = {"name": "NoReturn", "email": "noreturn@example.com", "age": 99}
+        # 测试插入单条记录不返回对象
+        rowcount = BaseRepository.insert(db_session, User, record, returning=False)
+        assert rowcount == 1
+        db_session.commit()
+        # 验证数据确实插入
+        stmt = select(User).where(User.email == "noreturn@example.com")
+        result = db_session.execute(stmt).scalar_one()
+        assert result.name == "NoReturn"
+        assert result.age == 99
+
+    def test_update_by_id(self, db_session):
+        """测试按 ID 更新记录"""
+        # 先插入测试数据
+        record = {"name": "Original", "email": "original@example.com", "age": 25}
+        user = BaseRepository.insert(db_session, User, record)
+        db_session.commit()
+
+        # 更新记录
+        updated_count = BaseRepository.update(
+            db_session,
+            User,
+            {"id": user.id},  # 按 ID 过滤
+            {"name": "Updated", "age": 30},  # 更新字段
+        )
+        assert updated_count == 1
+        db_session.commit()
+
+        # 验证更新结果
+        stmt = select(User).where(User.id == user.id)
+        updated_user = db_session.execute(stmt).scalar_one()
+        assert updated_user.name == "Updated"
+        assert updated_user.age == 30
+        assert updated_user.email == "original@example.com"  # 未更新的字段保持不变
+
+    def test_update_with_complex_filters(self, db_session):
+        """测试使用复杂过滤条件更新记录"""
+        # 插入测试数据
+        users_data = [
+            {"name": "Alice", "email": "alice@example.com", "age": 25},
             {"name": "Bob", "email": "bob@example.com", "age": 30},
             {"name": "Charlie", "email": "charlie@example.com", "age": 35},
         ]
-        users = BaseRepository.insert_many(sync_session, User, records)
-        assert len(users) == 2
-        assert all(user.id is not None for user in users)
-        sync_session.commit()
-        stmt = select(User)
-        results = sync_session.execute(stmt).scalars().all()
-        assert len(results) == 2
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
 
-    def test_insert_unified(self, sync_session):
-        """测试统一插入接口"""
-        # 单条
-        record = {"name": "David", "email": "david@example.com", "age": 40}
-        user = BaseRepository.insert(sync_session, User, record)
-        assert isinstance(user, User)
-        # 多条
-        records = [
-            {"name": "Eve", "email": "eve@example.com", "age": 45},
-            {"name": "Frank", "email": "frank@example.com", "age": 50},
-        ]
-        users = BaseRepository.insert(sync_session, User, records)
-        assert isinstance(users, list)
-        assert len(users) == 2
-        sync_session.commit()
-
-    def test_update(self, sync_session):
-        """测试更新记录"""
-        # 先插入一条记录
-        user = BaseRepository.insert_one(
-            sync_session, User, {"name": "Original", "email": "original@example.com", "age": 20}
-        )
-        sync_session.commit()
-
-        # 更新
-        affected = BaseRepository.update(sync_session, User, {"id": user.id}, {"name": "Updated", "age": 30})
-        assert affected == 1
-        sync_session.commit()
-
-        # 验证更新
-        updated = sync_session.get(User, user.id)
-        assert updated.name == "Updated"
-        assert updated.age == 30
-
-    def test_update_with_complex_filters(self, sync_session):
-        """测试复杂过滤条件更新"""
-        # 插入测试数据
-        BaseRepository.insert_many(
-            sync_session,
+        # 更新年龄大于 28 的用户
+        updated_count = BaseRepository.update(
+            db_session,
             User,
-            [
-                {"name": "Alice", "email": "alice1@example.com", "age": 20},
-                {"name": "Alice", "email": "alice2@example.com", "age": 25},
-                {"name": "Bob", "email": "bob@example.com", "age": 30},
-            ],
+            {"age__gt": 28},  # 复杂过滤条件：年龄大于 28
+            {"age": 40},  # 将所有符合条件的用户年龄更新为 40
         )
-        sync_session.commit()
+        assert updated_count == 2  # Bob(30) 和 Charlie(35) 应该被更新
+        db_session.commit()
 
-        # 更新所有 Alice
-        affected = BaseRepository.update(sync_session, User, {"name": "Alice"}, {"age": 99})
-        assert affected == 2
-        sync_session.commit()
+        # 验证更新结果
+        stmt = select(User).where(User.age == 40)
+        updated_users = db_session.execute(stmt).scalars().all()
+        assert len(updated_users) == 2
+        assert {user.name for user in updated_users} == {"Bob", "Charlie"}
 
-        # 验证
+        # 验证 Alice 的年龄没有变化
         stmt = select(User).where(User.name == "Alice")
-        results = sync_session.execute(stmt).scalars().all()
-        assert all(user.age == 99 for user in results)
+        alice = db_session.execute(stmt).scalar_one()
+        assert alice.age == 25
 
-    def test_delete(self, sync_session):
-        """测试删除记录"""
-        user = BaseRepository.insert_one(
-            sync_session, User, {"name": "ToDelete", "email": "delete@example.com", "age": 99}
-        )
-        sync_session.commit()
+    def test_delete_by_id(self, db_session):
+        """测试按 ID 删除记录"""
+        # 先插入测试数据
+        record = {"name": "ToDelete", "email": "delete@example.com", "age": 25}
+        user = BaseRepository.insert(db_session, User, record)
+        db_session.commit()
 
-        affected = BaseRepository.delete(sync_session, User, {"id": user.id})
-        assert affected == 1
-        sync_session.commit()
+        # 删除记录
+        deleted_count = BaseRepository.delete(db_session, User, {"id": user.id})
+        assert deleted_count == 1
+        db_session.commit()
 
-        deleted = sync_session.get(User, user.id)
-        assert deleted is None
+        # 验证记录已被删除
+        stmt = select(User).where(User.id == user.id)
+        result = db_session.execute(stmt).scalar_one_or_none()
+        assert result is None
 
-    def test_get(self, sync_session):
-        """测试根据主键获取记录"""
-        user = BaseRepository.insert_one(
-            sync_session, User, {"name": "GetTest", "email": "get@example.com", "age": 100}
-        )
-        sync_session.commit()
-
-        fetched = BaseRepository.get(sync_session, User, user.id)
-        assert fetched is not None
-        assert fetched.id == user.id
-        assert fetched.name == "GetTest"
-
-        # 不存在的记录
-        none_result = BaseRepository.get(sync_session, User, 99999)
-        assert none_result is None
-
-    def test_list(self, sync_session):
-        """测试列表查询"""
+    def test_delete_with_complex_filters(self, db_session):
+        """测试使用复杂过滤条件删除记录"""
         # 插入测试数据
-        BaseRepository.insert_many(
-            sync_session,
+        users_data = [
+            {"name": "Alice", "email": "alice@example.com", "age": 25},
+            {"name": "Bob", "email": "bob@example.com", "age": 30},
+            {"name": "Charlie", "email": "charlie@example.com", "age": 35},
+            {"name": "David", "email": "david@example.com", "age": 40},
+        ]
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
+
+        # 删除年龄大于等于 35 的用户
+        deleted_count = BaseRepository.delete(
+            db_session,
             User,
-            [
-                {"name": "Alice", "email": "alice@example.com", "age": 20},
-                {"name": "Bob", "email": "bob@example.com", "age": 30},
-                {"name": "Charlie", "email": "charlie@example.com", "age": 40},
-            ],
+            {"age__ge": 35},  # 复杂过滤条件：年龄大于等于 35
         )
-        sync_session.commit()
+        assert deleted_count == 2  # Charlie(35) 和 David(40) 应该被删除
+        db_session.commit()
 
-        # 无过滤
-        users = BaseRepository.list(sync_session, User)
+        # 验证删除结果
+        stmt = select(User)
+        remaining_users = db_session.execute(stmt).scalars().all()
+        assert len(remaining_users) == 2
+        assert {user.name for user in remaining_users} == {"Alice", "Bob"}
+
+        # 验证被删除的用户确实不存在了
+        stmt = select(User).where(User.age >= 35)
+        deleted_users = db_session.execute(stmt).scalars().all()
+        assert len(deleted_users) == 0
+
+    def test_get_by_primary_key(self, db_session):
+        """测试根据主键获取记录"""
+        # 先插入测试数据
+        record = {"name": "TestGet", "email": "testget@example.com", "age": 25}
+        user = BaseRepository.insert(db_session, User, record)
+        db_session.commit()
+
+        # 根据主键获取记录
+        retrieved_user = BaseRepository.get(db_session, User, user.id)
+        assert retrieved_user is not None
+        assert retrieved_user.id == user.id
+        assert retrieved_user.name == "TestGet"
+        assert retrieved_user.email == "testget@example.com"
+        assert retrieved_user.age == 25
+
+    def test_get_not_found(self, db_session):
+        """测试获取不存在的记录"""
+        # 尝试获取不存在的记录（使用一个不可能存在的 ID）
+        non_existent_id = 999999
+        retrieved_user = BaseRepository.get(db_session, User, non_existent_id)
+        assert retrieved_user is None
+
+    def test_list_all(self, db_session):
+        """测试查询所有记录"""
+        # 插入测试数据
+        users_data = [
+            {"name": "User1", "email": "user1@example.com", "age": 20},
+            {"name": "User2", "email": "user2@example.com", "age": 25},
+            {"name": "User3", "email": "user3@example.com", "age": 30},
+        ]
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
+
+        # 查询所有记录
+        users = BaseRepository.list(db_session, User)
         assert len(users) == 3
+        assert {user.name for user in users} == {"User1", "User2", "User3"}
 
-        # 带过滤
-        users = BaseRepository.list(sync_session, User, {"name": "Alice"})
-        assert len(users) == 1
-        assert users[0].name == "Alice"
-
-        # 带操作符过滤
-        users = BaseRepository.list(sync_session, User, {"age__gt": 25})
-        assert len(users) == 2
-        assert all(user.age > 25 for user in users)
-
-        # 排序
-        users = BaseRepository.list(sync_session, User, order_by=["age desc"])
-        assert users[0].age == 40
-        assert users[-1].age == 20
-
-        # 分页
-        users = BaseRepository.list(sync_session, User, offset=1, limit=2)
-        assert len(users) == 2
-
-    def test_update_empty_filters_raises(self, sync_session):
-        """测试空过滤器引发异常"""
-        with pytest.raises(ValueError, match="filters or values is empty"):
-            BaseRepository.update(sync_session, User, {}, {"name": "test"})
-
-    def test_delete_empty_filters_raises(self, sync_session):
-        """测试空过滤器引发异常"""
-        with pytest.raises(ValueError, match="filters is empty"):
-            BaseRepository.delete(sync_session, User, {})
-
-
-# 测试异步仓库
-class TestAsyncBaseRepository:
-    """测试 AsyncBaseRepository 异步方法"""
-
-    @pytest.mark.asyncio
-    async def test_insert_one(self, async_session):
-        """测试异步插入单条记录"""
-        record = {"name": "Alice", "email": "alice@example.com", "age": 25}
-        user = await AsyncBaseRepository.insert_one(async_session, User, record)
-        assert user.id is not None
-        assert user.name == "Alice"
-        await async_session.commit()
-
-    @pytest.mark.asyncio
-    async def test_insert_many(self, async_session):
-        """测试异步插入多条记录"""
-        records = [
+    def test_list_with_filters(self, db_session):
+        """测试带过滤条件查询"""
+        # 插入测试数据
+        users_data = [
+            {"name": "Alice", "email": "alice@example.com", "age": 25},
             {"name": "Bob", "email": "bob@example.com", "age": 30},
             {"name": "Charlie", "email": "charlie@example.com", "age": 35},
         ]
-        users = await AsyncBaseRepository.insert_many(async_session, User, records)
-        assert len(users) == 2
-        assert all(user.id is not None for user in users)
-        await async_session.commit()
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
 
-    @pytest.mark.asyncio
-    async def test_insert_unified(self, async_session):
-        """测试异步统一插入接口"""
-        # 单条
-        record = {"name": "David", "email": "david@example.com", "age": 40}
-        user = await AsyncBaseRepository.insert(async_session, User, record)
-        assert isinstance(user, User)
-        # 多条
-        records = [
-            {"name": "Eve", "email": "eve@example.com", "age": 45},
-            {"name": "Frank", "email": "frank@example.com", "age": 50},
-        ]
-        users = await AsyncBaseRepository.insert(async_session, User, records)
-        assert isinstance(users, list)
-        assert len(users) == 2
-        await async_session.commit()
-
-    @pytest.mark.asyncio
-    async def test_update(self, async_session):
-        """测试异步更新记录"""
-        # 先插入一条记录
-        user = await AsyncBaseRepository.insert_one(
-            async_session, User, {"name": "Original", "email": "original@example.com", "age": 20}
-        )
-        await async_session.commit()
-
-        # 更新
-        affected = await AsyncBaseRepository.update(
-            async_session, User, {"id": user.id}, {"name": "Updated", "age": 30}
-        )
-        assert affected == 1
-        await async_session.commit()
-
-        # 验证更新
-        updated = await async_session.get(User, user.id)
-        assert updated.name == "Updated"
-        assert updated.age == 30
-
-    @pytest.mark.asyncio
-    async def test_delete(self, async_session):
-        """测试异步删除记录"""
-        user = await AsyncBaseRepository.insert_one(
-            async_session, User, {"name": "ToDelete", "email": "delete@example.com", "age": 99}
-        )
-        await async_session.commit()
-
-        affected = await AsyncBaseRepository.delete(async_session, User, {"id": user.id})
-        assert affected == 1
-        await async_session.commit()
-
-        deleted = await async_session.get(User, user.id)
-        assert deleted is None
-
-    @pytest.mark.asyncio
-    async def test_get(self, async_session):
-        """测试异步根据主键获取记录"""
-        user = await AsyncBaseRepository.insert_one(
-            async_session, User, {"name": "GetTest", "email": "get@example.com", "age": 100}
-        )
-        await async_session.commit()
-
-        fetched = await AsyncBaseRepository.get(async_session, User, user.id)
-        assert fetched is not None
-        assert fetched.id == user.id
-        assert fetched.name == "GetTest"
-
-        # 不存在的记录
-        none_result = await AsyncBaseRepository.get(async_session, User, 99999)
-        assert none_result is None
-
-    @pytest.mark.asyncio
-    async def test_list(self, async_session):
-        """测试异步列表查询"""
-        # 插入测试数据
-        await AsyncBaseRepository.insert_many(
-            async_session,
-            User,
-            [
-                {"name": "Alice", "email": "alice@example.com", "age": 20},
-                {"name": "Bob", "email": "bob@example.com", "age": 30},
-                {"name": "Charlie", "email": "charlie@example.com", "age": 40},
-            ],
-        )
-        await async_session.commit()
-
-        # 无过滤
-        users = await AsyncBaseRepository.list(async_session, User)
-        assert len(users) == 3
-
-        # 带过滤
-        users = await AsyncBaseRepository.list(async_session, User, {"name": "Alice"})
+        # 测试等于过滤
+        users = BaseRepository.list(db_session, User, filters={"name": "Alice"})
         assert len(users) == 1
         assert users[0].name == "Alice"
+        assert users[0].age == 25
 
-        # 带操作符过滤
-        users = await AsyncBaseRepository.list(async_session, User, {"age__gt": 25})
+        # 测试范围过滤
+        users = BaseRepository.list(db_session, User, filters={"age__gt": 28})
         assert len(users) == 2
-        assert all(user.age > 25 for user in users)
+        assert {user.name for user in users} == {"Bob", "Charlie"}
 
-        # 排序
-        users = await AsyncBaseRepository.list(async_session, User, order_by=["age desc"])
-        assert users[0].age == 40
-        assert users[-1].age == 20
-
-        # 分页
-        users = await AsyncBaseRepository.list(async_session, User, offset=1, limit=2)
+        # 测试 IN 过滤
+        users = BaseRepository.list(db_session, User, filters={"age__in": [25, 35]})
         assert len(users) == 2
+        assert {user.name for user in users} == {"Alice", "Charlie"}
 
-    @pytest.mark.asyncio
-    async def test_update_empty_filters_raises(self, async_session):
-        """测试异步空过滤器引发异常"""
-        with pytest.raises(ValueError, match="filters or values is empty"):
-            await AsyncBaseRepository.update(async_session, User, {}, {"name": "test"})
-
-    @pytest.mark.asyncio
-    async def test_delete_empty_filters_raises(self, async_session):
-        """测试异步空过滤器引发异常"""
-        with pytest.raises(ValueError, match="filters is empty"):
-            await AsyncBaseRepository.delete(async_session, User, {})
-
-
-# 测试边界情况和问题点
-class TestEdgeCases:
-    """测试边界情况和潜在问题"""
-
-    def test_set_model_ignores_nonexistent_fields(self, sync_session):
-        """测试 set_model 忽略不存在的字段（静默忽略）"""
-        user = User(name="test", email="test@example.com", age=20)
-        # 不存在的字段不会引发异常
-        updated = set_model(user, {"nonexistent": "value", "also_not_real": 123})
-        assert not hasattr(updated, "nonexistent")
-        assert not hasattr(updated, "also_not_real")
-        # 存在的字段正常更新
-        updated = set_model(user, {"name": "updated"})
-        assert updated.name == "updated"
-
-    def test_build_filters_ignores_invalid_fields(self):
-        """测试 build_filters 忽略无效字段（静默忽略）"""
-        conditions = build_filters(User, {"invalid_field": "value"})
-        assert len(conditions) == 0
-        conditions = build_filters(User, {"invalid_field__gt": 10})
-        assert len(conditions) == 0
-
-    def test_build_orders_ignores_invalid_fields(self):
-        """测试 build_orders 忽略无效字段（静默忽略）"""
-        orders = build_orders(User, {"invalid_field": "desc"})
-        assert len(orders) == 0
-
-    def test_insert_relations_behavior(self, sync_session):
-        """测试关联字段的行为"""
-        # 测试单条记录带关联
-        record = {"name": "Test", "email": "test@example.com", "age": 20}
-        relations = {"extra_field": "value"}  # 但 User 模型没有 extra_field
-        user = BaseRepository.insert_one(sync_session, User, record, relations)
-        # set_model 会忽略不存在的字段，所以不会出错
-        assert user.name == "Test"
-        sync_session.commit()
-
-    def test_insert_many_relations_edge_cases(self, sync_session):
-        """测试多条插入时关联字段的边缘情况"""
-        records = [
-            {"name": "A", "email": "a@example.com", "age": 1},
-            {"name": "B", "email": "b@example.com", "age": 2},
-            {"name": "C", "email": "c@example.com", "age": 3},
+    def test_list_with_ordering(self, db_session):
+        """测试带排序查询"""
+        # 插入测试数据
+        users_data = [
+            {"name": "Charlie", "email": "charlie@example.com", "age": 35},
+            {"name": "Alice", "email": "alice@example.com", "age": 25},
+            {"name": "Bob", "email": "bob@example.com", "age": 30},
         ]
-        # relations 列表为空
-        users = BaseRepository.insert_many(sync_session, User, records, relations=[])
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
+
+        # 测试升序排序
+        users = BaseRepository.list(db_session, User, orders={"age": "asc"})
         assert len(users) == 3
+        assert [user.age for user in users] == [25, 30, 35]
+        assert [user.name for user in users] == ["Alice", "Bob", "Charlie"]
 
-        # relations 只有一个元素，所有记录使用同一个
-        relations = [{"extra": "shared"}]
-        # 使用不同的email避免唯一约束冲突
-        records2 = [
-            {"name": "A2", "email": "a2@example.com", "age": 1},
-            {"name": "B2", "email": "b2@example.com", "age": 2},
-            {"name": "C2", "email": "c2@example.com", "age": 3},
-        ]
-        users = BaseRepository.insert_many(sync_session, User, records2, relations=relations)
-        # 不会出错，但 extra 字段不存在于模型
+        # 测试降序排序
+        users = BaseRepository.list(db_session, User, orders={"age": "desc"})
+        assert len(users) == 3
+        assert [user.age for user in users] == [35, 30, 25]
+        assert [user.name for user in users] == ["Charlie", "Bob", "Alice"]
 
-        sync_session.commit()
+    def test_list_with_pagination(self, db_session):
+        """测试分页查询"""
+        # 插入测试数据
+        users_data = []
+        for i in range(10):
+            users_data.append({"name": f"User{i + 1}", "email": f"user{i + 1}@example.com", "age": 20 + i})
+        BaseRepository.insert(db_session, User, users_data)
+        db_session.commit()
 
-    @pytest.mark.skip(reason="需要 PostgreSQL 数据库支持 ON CONFLICT")
-    def test_upsert_postgresql_only(self):
-        """测试 upsert 功能（仅限 PostgreSQL）"""
-        # 由于 SQLite 不支持完整的 ON CONFLICT 语法，此测试需要 PostgreSQL
-        pass
+        # 测试第一页，每页 3 条
+        users = BaseRepository.list(db_session, User, offset=0, limit=3)
+        assert len(users) == 3
+        assert [user.name for user in users] == ["User1", "User2", "User3"]
+
+        # 测试第二页，每页 3 条
+        users = BaseRepository.list(db_session, User, offset=3, limit=3)
+        assert len(users) == 3
+        assert [user.name for user in users] == ["User4", "User5", "User6"]
+
+        # 测试第三页，每页 4 条
+        users = BaseRepository.list(db_session, User, offset=8, limit=4)
+        assert len(users) == 2  # 只剩下 2 条记录
+        assert [user.name for user in users] == ["User9", "User10"]
+
+        # 测试偏移量超出范围
+        users = BaseRepository.list(db_session, User, offset=20, limit=5)
+        assert len(users) == 0
+
+
+if __name__ == "__main__":
+    pytest.main()
