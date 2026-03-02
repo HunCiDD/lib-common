@@ -32,7 +32,7 @@ class ExeclStorager(IStorager):
 
         if self.suffix == ".csv":
             df_clean_rst.to_csv(self.path, **kwargs)
-        elif self.suffix in (".xls", '.xlsx'):
+        elif self.suffix in (".xls", ".xlsx"):
             with pd.ExcelWriter(self.path, engine=self.engine) as writer:
                 df_clean_rst.to_excel(writer, sheet_name="Sheet1", **kwargs)
         else:
@@ -58,5 +58,3 @@ class DBStorager(IStorager):
     def store(self, df_data: pd.DataFrame, *args, **kwargs) -> None:
         records = df_data.to_dict(orient="records")
         BaseRepository.upsert(self.session, self.model_cls, records, self.conflict_columns)
-
-

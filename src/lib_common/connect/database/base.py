@@ -98,22 +98,20 @@ class DBInfra:
             return f"{dialect}+{driver}://{username}:{password}@{netloc}/{database}"
 
     @property
-    def engine_configs(self) -> dict:
+    def engine_configs(self) -> Dict[str, Any]:
         if self.cm.dialect == "sqlite" and self.cm.file.name == ":memory:":
             return {
                 "connect_args": {"check_same_thread": False},
             }
-        else:
-            return {
-                "pool_pre_ping": True,  # 使用前检查连接是否有效
-                "pool_recycle": 300,  # 每5分钟回收连接(秒) - 防止服务器超时断开
-                "pool_size": 10,  # 连接池大小
-                "max_overflow": 20,  # 允许超过pool_size的连接数
-                "pool_timeout": 30,  # 获取连接超时时间(秒)
-                "connect_args": {
-                    "command_timeout": 60,  # 单个命令超时时间(秒)
-                },
-            }
+
+        _configs = {
+            "pool_pre_ping": True,  # 使用前检查连接是否有效
+            "pool_recycle": 300,  # 每5分钟回收连接(秒) - 防止服务器超时断开
+            "pool_size": 10,  # 连接池大小
+            "max_overflow": 20,  # 允许超过pool_size的连接数
+            "pool_timeout": 30,  # 获取连接超时时间(秒)
+        }
+        return _configs
 
 
 class SQLAlchemyDBConnectionContext:

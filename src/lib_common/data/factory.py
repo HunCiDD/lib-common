@@ -17,4 +17,3 @@ class CleanerFactory(RegisterFactory[ICleaner]):
 # 数据存储工厂
 class StoragerFactory(RegisterFactory[IStorager]):
     _map = {}
-

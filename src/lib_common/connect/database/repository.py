@@ -38,6 +38,7 @@ def set_model(model: M, entity: dict) -> M:
             setattr(model, k, v)
     return model
 
+
 def to_model(model_cls: Type[M], record: Dict[str, Any], relation: Dict[str, Any] | None = None) -> M:
     """
     记录转换成对应 SQLAlchemy 数据库模型
@@ -117,7 +118,9 @@ def build_order_conditions(model_cls: Type[M], orders: Dict[str, Any]) -> list:
     return conditions
 
 
-def build_stmt_insert(model_cls: Type[M], values: Dict[str, Any] | List[Dict[str, Any]], returning: bool = False) -> Any:
+def build_stmt_insert(
+    model_cls: Type[M], values: Dict[str, Any] | List[Dict[str, Any]], returning: bool = False
+) -> Any:
     """
     构建插入stmt
     :param model_cls: 模型类
@@ -135,7 +138,9 @@ def build_stmt_insert(model_cls: Type[M], values: Dict[str, Any] | List[Dict[str
     return stmt
 
 
-def build_stmt_update(model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any], returning: bool = False) -> Any:
+def build_stmt_update(
+    model_cls: Type[M], filters: Dict[str, Any], values: Dict[str, Any], returning: bool = False
+) -> Any:
     """
     构建插入stmt
     :param model_cls: 模型类
@@ -180,11 +185,13 @@ def build_stmt_delete(model_cls: Type[M], filters: Dict[str, Any], returning: bo
     return stmt
 
 
-def build_stmt_upsert(model_cls: Type[M],
-                      values: Dict[str, Any] | List[Dict[str, Any]],
-                      conflict_columns: List[str] | None = None,
-                      set_: Dict[str, Any] | None = None,
-                      returning: bool = False) -> Any:
+def build_stmt_upsert(
+    model_cls: Type[M],
+    values: Dict[str, Any] | List[Dict[str, Any]],
+    conflict_columns: List[str] | None = None,
+    set_: Dict[str, Any] | None = None,
+    returning: bool = False,
+) -> Any:
     """
     构建 upsert (插入或更新) stmt，使用 PostgreSQL 的 ON CONFLICT 功能
 
@@ -222,11 +229,9 @@ def build_stmt_upsert(model_cls: Type[M],
     return stmt
 
 
-def build_stmt_select(model_cls: Type[M],
-                      filters: Dict[str, Any] = None,
-                      orders: Dict[str, Any] = None,
-                      offset: int = 0,
-                      limit: int = 100) -> Any:
+def build_stmt_select(
+    model_cls: Type[M], filters: Dict[str, Any] = None, orders: Dict[str, Any] = None, offset: int = 0, limit: int = 100
+) -> Any:
     """
     构建查询stmt
     :param model_cls: 模型类
@@ -258,10 +263,7 @@ class BaseRepository:
 
     @staticmethod
     def insert(
-        session: Session,
-        model_cls: Type[M],
-        values: Dict[str, Any] | List[Dict[str, Any]],
-        returning: bool = True
+        session: Session, model_cls: Type[M], values: Dict[str, Any] | List[Dict[str, Any]], returning: bool = True
     ) -> Any:
         """
         统一插入接口，自动识别单条或多条

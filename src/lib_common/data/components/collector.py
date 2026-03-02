@@ -36,4 +36,3 @@ class ExeclCollector(ICollector):
             return pd.read_excel(self.path, dtype=self.dtype, **kwargs)
         else:
             raise ValueError(f"不支持的文件格式: {suffix}，仅支持 .csv, .xls, .xlsx")
-

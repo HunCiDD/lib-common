@@ -54,7 +54,9 @@ class AppRepository(IRepository[M], Generic[M]):
 
     async def set(self, conn: AsyncSession, entity_id: Any, entity: dict, relation: dict = None, **kwargs) -> int:
         run_logger.debug(f"Set {self.model_type.__name__}")
-        return await AsyncBaseRepository.update(conn, self.model_type, entity, relation, filters={"id": entity_id}, **kwargs)
+        return await AsyncBaseRepository.update(
+            conn, self.model_type, entity, relation, filters={"id": entity_id}, **kwargs
+        )
         _model = await conn.get(self.model_type, entity_id)
         if not _model:
             return _model
@@ -116,4 +118,3 @@ class AppRepository(IRepository[M], Generic[M]):
 
         result = await conn.execute(stmt)
         return list(result.scalars().unique().all())
-
