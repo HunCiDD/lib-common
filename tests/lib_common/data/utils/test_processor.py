@@ -1,6 +1,14 @@
+
+
+
+
 import pytest
 
-from lib_common.data.utils.processor import StringProcessor, ListProcessor, DictProcessor
+import numpy as np
+import pandas as pd
+
+from lib_common.data.utils.processor import (StringProcessor, ListProcessor,
+                                             DictProcessor, SeriesProcessor, DataFrameProcessor)
 
 
 class TestStringProcessor:
@@ -176,6 +184,76 @@ class TestDictProcessor:
         # 删除
         deleted = DictProcessor.delete_keys(data, ["nested"])
         assert deleted == {"top": "level"}
+
+
+# 测试数据准备
+@pytest.fixture
+def sample_df():
+    """基础测试数据，包含重复的键列 (A,B) 和多列有效数据"""
+    data = [
+        {'A': 'a1', 'B': 'b1', 'C': 'c1', 'D': np.nan, 'E': 10},
+        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': 'D1', 'E': 20},
+        {'A': 'a2', 'B': 'b2', 'C': 'c2', 'D': 'D2', 'E': 30},  # 无重复的行
+    ]
+    return pd.DataFrame(data)
+
+@pytest.fixture
+def df_multiple_nonnull():
+    """同一列在组内有多个非空值，用于测试 first/last 区别"""
+    data = [
+        {'A': 'a1', 'B': 'b1', 'C': 'c1', 'D': 'D1', 'E': 1},
+        {'A': 'a1', 'B': 'b1', 'C': 'c2', 'D': 'D2', 'E': 2},
+        {'A': 'a1', 'B': 'b1', 'C': 'c3', 'D': np.nan, 'E': 3},
+    ]
+    return pd.DataFrame(data)
+
+@pytest.fixture
+def df_all_nan():
+    """某列全为 NaN 的情况"""
+    data = [
+        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': 'D1'},
+        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': np.nan},
+    ]
+    return pd.DataFrame(data)
+
+
+class TestDataFrameProcessor:
+
+    # 测试基本功能：单键列，取第一个非空值
+    def test_single_key_first_non_null(self, sample_df):
+        result = DataFrameProcessor.deduplicate(sample_df, key_columns="A")
+        # 期望：按A分组，A列唯一，其他列取第一个非空值（按行顺序）
+        expected_data = [
+            {"A": "a1", "B": "b1", "C": "c1", "D": "D1", "E": 10},
+            {"A": "a2", "B": "b2", "C": "c2", "D": "D2", "E": 30},
+        ]
+        expected = pd.DataFrame(expected_data)
+        pd.testing.assert_frame_equal(result, expected)
+
+    # 测试多键列，取第一个非空值
+    def test_multi_key_first_non_null(self, sample_df):
+        result = DataFrameProcessor.deduplicate(sample_df, key_columns=["A", "B"])
+        # 期望：按A,B分组，合并非空值，C取c1，D取D1，E取10
+        expected_data = [
+            {"A": "a1", "B": "b1", "C": "c1", "D": "D1", "E": 10},
+            {"A": "a2", "B": "b2", "C": "c2", "D": "D2", "E": 30},
+        ]
+        expected = pd.DataFrame(expected_data)
+        pd.testing.assert_frame_equal(result, expected)
+
+    # 测试取最后一个非空值
+    def test_last_non_null(self, df_multiple_nonnull):
+        result = DataFrameProcessor.deduplicate(
+            df_multiple_nonnull,
+            key_columns=["A", "B"],
+            agg_methods={"all": SeriesProcessor.last_non_null}
+        )
+        # 期望：C取c3（最后一个非空），D取D2（最后一个非空），E取3（最后一个非空）
+        expected_data = [
+            {"A": "a1", "B": "b1", "C": "c3", "D": "D2", "E": 3},
+        ]
+        expected = pd.DataFrame(expected_data)
+        pd.testing.assert_frame_equal(result, expected)
 
 
 if __name__ == "__main__":

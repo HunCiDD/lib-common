@@ -2,6 +2,7 @@
 
 from datetime import datetime, UTC
 import pytz
+import pandas as pd
 
 
 __all__ = [
@@ -87,3 +88,60 @@ class DateTimeProcessor:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)  # 假设无时区时间为UTC
         return dt.astimezone(target_tz)
+
+
+class SeriesProcessor:
+    @staticmethod
+    def first_non_null(s: pd.Series) -> Any:
+        # 获取第一个不为空的
+        s = s.dropna()
+        return s.iloc[0] if not s.empty else None
+
+    @staticmethod
+    def last_non_null(s: pd.Series) -> Any:
+        # 获取最后一个不为空的
+        s = s.dropna()
+        return s.iloc[-1] if not s.empty else None
+
+
+class DataFrameProcessor:
+    @staticmethod
+    def deduplicate(df_data: pd.DataFrame, key_columns: List[str],
+                    agg_methods: Dict[str, Callable] = None) -> pd.DataFrame:
+        """
+        :param df_data:
+        :param key_columns:
+        :param agg_methods:
+        :return:
+        """
+
+        if isinstance(key_columns, str):
+            key_columns = [key_columns]
+
+        missing_columns = [col for col in key_columns if col not in df_data.columns]
+        if missing_columns:
+            raise KeyError(f"键列 {missing_cols} 不存在于DataFrame中")
+
+        if not agg_methods:
+            agg_methods = {}
+
+        agg_dict = {}
+        for col in df_data.columns:
+            if col in key_columns:
+                # 键列不参与聚合，groupby会直接保留
+                continue
+
+            if col in agg_methods:
+                agg_func = agg_methods[col]
+            elif "all" in agg_methods:
+                agg_func = agg_methods["all"]
+            else:
+                agg_func = SeriesProcessor.first_non_null
+
+            if not callable(agg_func):
+                raise ValueError(f"不支持的聚合方式: {agg_func}")
+            agg_dict[col] = agg_func
+
+        # 执行分组聚合
+        result = df_data.groupby(key_columns, as_index=False).agg(agg_dict)
+        return result
