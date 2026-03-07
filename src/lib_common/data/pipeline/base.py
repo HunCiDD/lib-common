@@ -1,11 +1,23 @@
 from abc import ABC, abstractmethod
 
-
-from ..designs.factory import RegisterFactory
+from ...designs.factory import RegisterFactory
 
 
 # 1. 策略接口
 class IDataStrategy(ABC):
+
+
+    def __init__(self, name: str, category: str = 'base', rk: str = '0'):
+        """
+        :param name:  策略名称
+        :param category:  策略类型，eg: collect, clean, storage 等
+        :param rk: 结果key
+        """
+        self.index = 0
+        self.name = name
+        self.category = category
+        self.rk = rk
+
     @abstractmethod
     def execute(self, context: Dict[str, Any]) -> None:
         """执行策略，可修改 context"""
@@ -38,6 +50,7 @@ class DataPipeline:
 class DataPipelineBuilder:
 
     def build(self, name: str, description: str, configs: List[Dict[str, Any]]) -> DataPipeline:
+        # 根据配置构建策略实例
         strategies = []
         for config in configs:
             category = config.get("category", None)
