@@ -1,8 +1,7 @@
-from typing import Type, List, Dict, Any, Iterable, Set
+from typing import Type, List, Dict, Any, Iterable
 from sqlalchemy import inspect, update, delete, select, desc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...logger.configs import loggers
 from .types import M

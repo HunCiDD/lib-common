@@ -1,29 +1,44 @@
+from typing import Dict, Any
 
-from .base import IDataStrategy
+import pandas as pd
+
+from ...logger.configs import loggers
+from .base import DataStrategy
 
 
-class BaseCleanStrategy:
-    def __init__(self):
-        self.df_collect_rst = pd.DataFrame()
+run_logger = loggers.get_logger("run")
+
+
+class BaseCleanStrategy(DataStrategy):
+    def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
+        super().__init__(name=name, category="collect", in_key=in_key, out_key=out_key, **kwargs)
+
+        # 待清洗数据
+        self.df_clean: pd.DataFrame = pd.DataFrame()
+        # 清洗结果
         self.df_clean_rst = pd.DataFrame()
 
     def execute(self, context: Dict[str, Any]) -> None:
-        self.df_collect_rst = context.get("df_collect_rst", None)
+        run_logger.info("Begin clean...")
+        self.before(context)
+        run_logger.info("Start clean...")
         self.df_clean_rst = self.clean(context)
+        run_logger.info("After clean...")
+        self.after(context)
 
     def before(self, context: Dict[str, Any]) -> None:
-        if self.df_collect_rst is None:
-            raise RuntimeError("df_collect_rst must exist")
-
-        if self.df_collect_rst.empty:
-            raise RuntimeError("df_collect_rst must not empty")
+        df_clean = context.get(self.in_key, pd.DataFrame())
+        if self.df_clean is None or self.df_clean.empty:
+            raise ValueError("df_clean cannot be None or empty")
+        self.df_clean = df_clean
 
     def clean(self, context: Dict[str, Any]) -> pd.DataFrame | None: ...
 
-    def end(self, context: Dict[str, Any]) -> None:
+    def after(self, context: Dict[str, Any]) -> None:
         if self.df_clean_rst is None or self.df_clean_rst.empty:
-            run_logger.error("未清洗到股票数据")
-            raise ValueError("未清洗到股票数据")
+            run_logger.error("清洗结果不存在")
+            raise ValueError("清洗结果不存在")
 
-        run_logger.info(f"成功获取{len(self.df_clean_rst)}条记录...")
-        context["df_clean_rst"] = self.df_collect_rst
+        run_logger.info(f"成功清洗数据：{len(self.df_clean_rst)}条记录...")
+        context[self.out_key] = self.df_clean_rst
+        run_logger.info(f"成功保存到上下文：{self.out_key}")

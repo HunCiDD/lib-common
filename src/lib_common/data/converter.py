@@ -10,7 +10,7 @@ __all__ = [
 from datetime import datetime, date
 from decimal import Decimal, ROUND_HALF_UP
 
-from pandas import DataFrame, isna
+from pandas import DataFrame
 
 
 def convert_exception(func):

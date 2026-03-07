@@ -43,15 +43,12 @@ class TaskRun(PKMixin, BaseModel):
 
 from threading import Lock
 
-from celery import Celery
 from celery.beat import ScheduleEntry, Scheduler
 from celery.schedules import crontab
 
-from ..configs import loggers, databases
+from ..configs import loggers
 
-from common.settings import SETTINGS, LOGGERS
 from connect.settings import DB
-from .settings import CELERY_SETTINGS
 from .models import TaskCrontab
 
 run_logger = loggers.get_logger("run")
@@ -104,7 +101,6 @@ class DefaultScheduler(Scheduler):
         return super().tick()
 
 
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -112,19 +108,19 @@ from ..types import PathType, UpperType, LowerType
 
 
 class WorkerConfigsM(BaseModel):
-    logfile: Optional[PathType] = None
+    logfile: PathType | None = None
     loglevel: UpperType = "DEBUG"
     pool: LowerType = "threads"
     concurrency: int = 4
 
 
 class BeatConfigsM(BaseModel):
-    logfile: Optional[PathType] = None
+    logfile: PathType | None = None
     loglevel: UpperType = "DEBUG"
 
 
 class CeleryConfigsM(BaseModel):
     broker: str
     backend: str
-    worker: Optional[WorkerConfigsM] = None
-    beat: Optional[BeatConfigsM] = None
+    worker: WorkerConfigsM | None = None
+    beat: BeatConfigsM | None = None

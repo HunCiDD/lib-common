@@ -106,8 +106,9 @@ class SeriesProcessor:
 
 class DataFrameProcessor:
     @staticmethod
-    def deduplicate(df_data: pd.DataFrame, key_columns: List[str],
-                    agg_methods: Dict[str, Callable] = None) -> pd.DataFrame:
+    def deduplicate(
+        df_data: pd.DataFrame, key_columns: List[str], agg_methods: Dict[str, Callable] = None
+    ) -> pd.DataFrame:
         """
         :param df_data:
         :param key_columns:
