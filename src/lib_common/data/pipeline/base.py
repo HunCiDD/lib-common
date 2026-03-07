@@ -44,7 +44,7 @@ class DataPipeline:
         self.strategies.append(strategy)
         return self  # 支持链式调用
 
-    def execute(self, **kwargs) -> None:
+    def run(self, **kwargs) -> None:
         for strategy in self.strategies:
             strategy.execute(self.context)
 

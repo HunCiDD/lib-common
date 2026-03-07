@@ -19,6 +19,7 @@ class BaseCollectStrategy(DataStrategy):
         self.df_collect_rst = pd.DataFrame()
 
     def execute(self, context: Dict[str, Any]) -> None:
+        run_logger.info(f"Start collect {self.name}...")
         self.df_collect_rst = self.collect(context)
         self.after(context)
 
@@ -34,9 +35,7 @@ class BaseCollectStrategy(DataStrategy):
         run_logger.info(f"成功保存到上下文：{self.out_key}")
 
 
-DataStrategyFactory.register("ExeclCollectStrategy")
-
-
+@DataStrategyFactory.register("ExeclCollectStrategy")
 class ExeclCollectStrategy(BaseCollectStrategy):
     """
     通用文件加载接口：根据文件扩展名自动读取 CSV 或 Excel 文件为 pandas DataFrame。
@@ -66,9 +65,7 @@ class ExeclCollectStrategy(BaseCollectStrategy):
             raise ValueError(f"不支持的文件格式: {suffix}，仅支持 .csv, .xls, .xlsx")
 
 
-DataStrategyFactory.register("DBCollectStrategy")
-
-
+@DataStrategyFactory.register("DBCollectStrategy")
 class DBCollectStrategy(BaseCollectStrategy):
     def __init__(
         self,
