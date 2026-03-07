@@ -1,6 +1,6 @@
 from pydantic import ConfigDict
 
-from ..data.utils.generator import UuidGenerator
+from lib_common.data.generator import UuidGenerator
 from ..schemas import Host
 
 

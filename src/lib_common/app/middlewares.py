@@ -4,7 +4,7 @@ import time
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from ..data.utils.generator import UuidGenerator
+from lib_common.data.generator import UuidGenerator
 from ..logger.base import AppLogContextVar
 from ..configs import loggers
 

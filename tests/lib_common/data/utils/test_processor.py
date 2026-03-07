@@ -7,8 +7,8 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from lib_common.data.utils.processor import (StringProcessor, ListProcessor,
-                                             DictProcessor, SeriesProcessor, DataFrameProcessor)
+from lib_common.data.processor import (StringProcessor, ListProcessor,
+                                       DictProcessor, SeriesProcessor, DataFrameProcessor)
 
 
 class TestStringProcessor:

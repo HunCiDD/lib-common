@@ -3,7 +3,7 @@ from typing import Annotated, TypeVar
 from sqlalchemy import String
 from sqlalchemy.orm import mapped_column
 
-from ...data.utils.generator import UuidGenerator
+from lib_common.data.generator import UuidGenerator
 from .base import BaseModel
 
 

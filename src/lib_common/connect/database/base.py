@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from ...types import T
 from ...designs.factory import RegisterFactory
-from ...data.utils.validates import validate_path
+from lib_common.data.validates import validate_path
 from .schemas import DBConfigsM
 
 

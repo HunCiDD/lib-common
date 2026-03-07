@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytest
-from lib_common.data.utils.converter import (
+from lib_common.data.converter import (
     DatetimeConverter,
     FloatConverter,
     ListConverter,
