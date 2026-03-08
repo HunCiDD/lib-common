@@ -7,7 +7,7 @@ from ...designs.factory import RegisterFactory
 
 # 1. 策略接口
 class DataStrategy(ABC):
-    def __init__(self, name: str, category: str = "base", in_key: str = "0", out_key: str = "0", **kwargs):
+    def __init__(self, name: str, in_key: str = "0", out_key: str = "0", category: str = "base", **kwargs):
         """
         :param name:  策略名称
         :param category:  策略类型，eg: collect, clean, storage 等
@@ -16,9 +16,9 @@ class DataStrategy(ABC):
         """
         self.index = 0
         self.name = name
-        self.category = category
         self.in_key = in_key
         self.out_key = out_key
+        self.category = category
         self.kwargs = kwargs
 
     @abstractmethod

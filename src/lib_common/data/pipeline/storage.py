@@ -16,7 +16,7 @@ run_logger = loggers.get_logger("run")
 # 基础存储策略
 class BaseStorageStrategy(DataStrategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
-        super().__init__(name=name, category="storage", in_key=in_key, out_key=out_key, **kwargs)
+        super().__init__(name=name, in_key=in_key, out_key=out_key, category="storage", **kwargs)
         # 待存储的数据
         self.df_storage: pd.DataFrame = pd.DataFrame()
 
@@ -48,7 +48,7 @@ class ExeclStorageStrategy(BaseStorageStrategy):
         :param file: str or Path 文件路径，支持 .csv, .xls, .xlsx 等常见格式。
         :param kwargs:
         """
-        super().__init__(name=name, category="storage", in_key=in_key, out_key=out_key, **kwargs)
+        super().__init__(name=name, in_key=in_key, out_key=out_key, **kwargs)
         self.path = Path(file)
         self.suffix = self.path.suffix.lower()
         self.engine = engine
@@ -89,7 +89,7 @@ class DBStorageStrategy(BaseStorageStrategy):
         :param conflict_columns: 冲突列
         :param kwargs: dict
         """
-        super().__init__(name=name, category="storage", in_key=in_key, out_key=out_key, **kwargs)
+        super().__init__(name=name, in_key=in_key, out_key=out_key, **kwargs)
         self.session = session
         self.model_cls = model_cls
         self.conflict_columns = conflict_columns

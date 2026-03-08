@@ -28,7 +28,7 @@ class BaseCleanStrategy(DataStrategy):
 
     def before(self, context: Dict[str, Any]) -> None:
         df_clean = context.get(self.in_key, pd.DataFrame())
-        if self.df_clean is None or self.df_clean.empty:
+        if df_clean is None or df_clean.empty:
             raise ValueError("df_clean cannot be None or empty")
         self.df_clean = df_clean
 

@@ -1,14 +1,9 @@
-
-
-
-
 import pytest
 
 import numpy as np
 import pandas as pd
 
-from lib_common.data.processor import (StringProcessor, ListProcessor,
-                                       DictProcessor, SeriesProcessor, DataFrameProcessor)
+from lib_common.data.processor import StringProcessor, ListProcessor, DictProcessor, SeriesProcessor, DataFrameProcessor
 
 
 class TestStringProcessor:
@@ -191,34 +186,35 @@ class TestDictProcessor:
 def sample_df():
     """基础测试数据，包含重复的键列 (A,B) 和多列有效数据"""
     data = [
-        {'A': 'a1', 'B': 'b1', 'C': 'c1', 'D': np.nan, 'E': 10},
-        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': 'D1', 'E': 20},
-        {'A': 'a2', 'B': 'b2', 'C': 'c2', 'D': 'D2', 'E': 30},  # 无重复的行
+        {"A": "a1", "B": "b1", "C": "c1", "D": np.nan, "E": 10},
+        {"A": "a1", "B": "b1", "C": np.nan, "D": "D1", "E": 20},
+        {"A": "a2", "B": "b2", "C": "c2", "D": "D2", "E": 30},  # 无重复的行
     ]
     return pd.DataFrame(data)
+
 
 @pytest.fixture
 def df_multiple_nonnull():
     """同一列在组内有多个非空值，用于测试 first/last 区别"""
     data = [
-        {'A': 'a1', 'B': 'b1', 'C': 'c1', 'D': 'D1', 'E': 1},
-        {'A': 'a1', 'B': 'b1', 'C': 'c2', 'D': 'D2', 'E': 2},
-        {'A': 'a1', 'B': 'b1', 'C': 'c3', 'D': np.nan, 'E': 3},
+        {"A": "a1", "B": "b1", "C": "c1", "D": "D1", "E": 1},
+        {"A": "a1", "B": "b1", "C": "c2", "D": "D2", "E": 2},
+        {"A": "a1", "B": "b1", "C": "c3", "D": np.nan, "E": 3},
     ]
     return pd.DataFrame(data)
+
 
 @pytest.fixture
 def df_all_nan():
     """某列全为 NaN 的情况"""
     data = [
-        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': 'D1'},
-        {'A': 'a1', 'B': 'b1', 'C': np.nan, 'D': np.nan},
+        {"A": "a1", "B": "b1", "C": np.nan, "D": "D1"},
+        {"A": "a1", "B": "b1", "C": np.nan, "D": np.nan},
     ]
     return pd.DataFrame(data)
 
 
 class TestDataFrameProcessor:
-
     # 测试基本功能：单键列，取第一个非空值
     def test_single_key_first_non_null(self, sample_df):
         result = DataFrameProcessor.deduplicate(sample_df, key_columns="A")
@@ -244,9 +240,7 @@ class TestDataFrameProcessor:
     # 测试取最后一个非空值
     def test_last_non_null(self, df_multiple_nonnull):
         result = DataFrameProcessor.deduplicate(
-            df_multiple_nonnull,
-            key_columns=["A", "B"],
-            agg_methods={"all": SeriesProcessor.last_non_null}
+            df_multiple_nonnull, key_columns=["A", "B"], agg_methods={"all": SeriesProcessor.last_non_null}
         )
         # 期望：C取c3（最后一个非空），D取D2（最后一个非空），E取3（最后一个非空）
         expected_data = [

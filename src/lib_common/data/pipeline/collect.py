@@ -47,7 +47,7 @@ class ExeclCollectStrategy(BaseCollectStrategy):
         :param file: str or Path 文件路径，支持 .csv, .xls, .xlsx 等常见格式。
         :param dtype: 指定列数据类型
         """
-        super().__init__(name=name, category="collect", in_key=in_key, out_key=out_key, **kwargs)
+        super().__init__(name=name, in_key=in_key, out_key=out_key, **kwargs)
         self.file = file
         self.path = Path(self.file)
         self.dtype = dtype
@@ -94,7 +94,7 @@ class DBCollectStrategy(BaseCollectStrategy):
         :param limit: int
         :param kwargs: dict
         """
-        super().__init__(name=name, category="collect", in_key=in_key, out_key=out_key, **kwargs)
+        super().__init__(name=name, in_key=in_key, out_key=out_key, **kwargs)
         self.session = session
         self.model_cls = model_cls
         self.columns = columns
