@@ -1,12 +1,12 @@
 import os
-from typing import Dict
+from typing import Dict, Type
 from functools import lru_cache
 
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import (
-    BaseSettings,
+    BaseSettings as PydanticBaseSettings,
     SettingsConfigDict,
     PydanticBaseSettingsSource,
     YamlConfigSettingsSource,
@@ -57,12 +57,11 @@ def get_model_config() -> SettingsConfigDict:
         secrets_nested_subdir=True,
         secrets_prefix="",
         case_sensitive=False,  # 忽略大小写
-        extra="ignore",
     )
 
 
-class Settings(BaseSettings):
-    """应用配置"""
+class BaseSettings(PydanticBaseSettings):
+    """可继承的配置基类，应用可以继承此类添加自定义字段"""
 
     # 使用动态配置
     model_config = get_model_config()
@@ -78,7 +77,7 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: type[BaseSettings],
+        settings_cls: type[PydanticBaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
@@ -94,6 +93,19 @@ class Settings(BaseSettings):
         )
 
 
+class Settings(BaseSettings):
+    """默认配置类（保持现有代码兼容）"""
+    pass
+
+
 @lru_cache
-def get_settings() -> Settings:
-    return Settings()
+def get_settings(settings_class: Type[BaseSettings] = Settings) -> BaseSettings:
+    """
+    获取配置单例实例
+
+    Args:
+        settings_class: 配置类，默认为 Settings
+    Returns:
+        配置实例
+    """
+    return settings_class()

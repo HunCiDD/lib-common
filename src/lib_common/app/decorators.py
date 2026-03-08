@@ -9,7 +9,7 @@ from .exceptions import ServiceException
 
 
 run_logger = loggers.get_logger("run")
-primary_db = databases.get_pool("primary")
+app_db = databases.get_pool("app")
 
 
 def _conn_wrapper(func: Callable[..., T], transaction: bool) -> Callable[..., T]:
@@ -26,7 +26,7 @@ def _conn_wrapper(func: Callable[..., T], transaction: bool) -> Callable[..., T]
                 return await func(self, *args, **kwargs)
 
             # 创建新连接并管理事务
-            async with primary_db.connection() as conn:
+            async with app_db.connection() as conn:
                 if not transaction:
                     result = await func(self, *args, conn=conn, **kwargs)
                     run_logger.info(f"{logs}, Success")

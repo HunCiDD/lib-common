@@ -41,9 +41,7 @@ class ExeclStorageStrategy(BaseStorageStrategy):
     通用文件存储接口：根据 pandas DataFrame，存储为 文件扩展名自动读取 CSV 或 Excel 文件为
     """
 
-    def __init__(
-        self, name: str, in_key: str, out_key: str, file: str | Path, engine: str = "openpyxl", **kwargs
-    ):
+    def __init__(self, name: str, in_key: str, out_key: str, file: str | Path, engine: str = "openpyxl", **kwargs):
         """
         :param file: str or Path 文件路径，支持 .csv, .xls, .xlsx 等常见格式。
         :param kwargs:

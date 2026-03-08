@@ -18,7 +18,7 @@ class AppConfigs(BaseModel):
     port: int = Field(default=8000, description="应用端口号")
     tz: str = Field(default="Asia/Shanghai", description="应用时区")
 
-    secret: SecretStr
+    secret: SecretStr = Field(default=SecretStr(""))
     algorithm: str = "HS256"
     access_token_expire: int = 15  # 分钟
     refresh_token_expire: int = 3  # 天

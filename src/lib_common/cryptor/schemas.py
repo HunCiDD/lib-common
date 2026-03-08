@@ -5,9 +5,9 @@ from pydantic import BaseModel, Field, SecretStr
 
 # 根秘钥
 class CryptorRootConfigsM(BaseModel):
-    material: SecretStr
-    salt: str
-    secret: SecretStr
+    material: SecretStr = Field(default=SecretStr(""))
+    salt: str = Field(default="")
+    secret: SecretStr = Field(default=SecretStr(""))
 
 
 # 工作秘钥
