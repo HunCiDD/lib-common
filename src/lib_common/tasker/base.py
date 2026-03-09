@@ -81,7 +81,7 @@ class CeleryBeat(CeleryBase):
         args = [
             "celery",
             "-A",
-            "src.appc_tasks.base",
+            f"{self.configs.app}",
             "beat",
             f"--loglevel={self.configs.beat.loglevel}",
             f"--logfile={self.configs.beat.logfile}",
