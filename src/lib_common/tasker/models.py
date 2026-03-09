@@ -1,33 +1,34 @@
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, ForeignKey, Text
 
 from ..connect.database.base import BaseModel
-from ..connect.database.mixins import PKMixin
+from ..connect.database.mixins import PKMixin, TimeAtMixin
 
 
 # 定时任务表设置
-class TaskCrontab(PKMixin, BaseModel):
-    __tablename__ = "task_crontabs"
-
-    task_type = Column(String(64), nullable=False)
-    task_params = Column(JSON(), nullable=False, default={})
-    # Crontab 参数, *-每小说或每分 0-0点
-    crontab = Column(String(64), nullable=False)
-    # 是否启用
-    is_active = Column(Boolean, default=True)
+class TaskCronJob(PKMixin, BaseModel, TimeAtMixin):
+    __tablename__ = "tasker_cron_jobs"
+    name = Column(String(255), nullable=False)
+    expression = Column(String(100), nullable=False)  # 表达式 如 "0 8 * * *"
+    t_name = Column(String(255), nullable=False)  # 映射任务命令
+    t_args = Column(JSON, default=[])
+    t_kwargs = Column(JSON, default={})  # 任务关键字参数
+    enabled = Column(Boolean, default=True)
+    one_off = Column(Boolean, default=False)
+    next_run_at = Column(DateTime, nullable=True)
 
     def __repr__(self) -> str:
-        return f"<TaskCrontab(id={self.id}, task_type={self.task_type}>"
+        return f"<TaskerCronJob(id={self.id}, name={self.name}, expression={self.expression}>"
 
 
-class TaskRun(PKMixin, BaseModel):
-    __tablename__ = "task_runs"
+class TaskExecution(PKMixin, BaseModel):
+    __tablename__ = "tasker_executions"
 
-    # 来源
-    source = Column(String(64), nullable=False)
-    params = Column(JSON(), nullable=False, default={})
-    status = Column(Enum("pending", "running", "success", "failed"), nullable=False, default="pending")
-    start_datetime = Column(DateTime(), nullable=False)
-    end_datetime = Column(DateTime(), nullable=True)
-    duration = Column(Integer(), nullable=True)
-    result = Column(JSON(), nullable=True)
-    msg = Column(String(512), nullable=True)
+    job_id = Column(String, ForeignKey("tasker_cron_jobs.id"), nullable=True)
+    status = Column(String(20), default="PENDING")
+    args = Column(JSON, nullable=True)
+    kwargs = Column(JSON, nullable=True)
+    start_at = Column(DateTime(), nullable=False)
+    end_at = Column(DateTime(), nullable=True)
+    result = Column(JSON, nullable=True)
+    error = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0)

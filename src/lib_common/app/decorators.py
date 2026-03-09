@@ -4,12 +4,12 @@ from typing import Any, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import T
-from ..configs import loggers, databases
+from ..logger.configs import loggers
+from ..connect.configs import databases
 from .exceptions import ServiceException
 
-
 run_logger = loggers.get_logger("run")
-app_db = databases.get_pool("app")
+app_db = databases.get_database("app")
 
 
 def _conn_wrapper(func: Callable[..., T], transaction: bool) -> Callable[..., T]:

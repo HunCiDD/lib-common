@@ -77,10 +77,21 @@ databases:
     database: appc-test
     echo: false
 
-
 redis:
   primary:
     host: "localhost"
     port: 6379
     db: 0
 
+tasker:
+  run: true
+  broker: "redis://localhost:6379/0"
+  backend: "db+postgresql+psycopg2://root:123456@localhost:3306/base-backend"
+  worker:
+    logfile: /Users/huncidd/Develop/Code/Self/Libs/lib-common/logs/celery_worker.log
+    loglevel: DEBUG
+    pool: threads
+    concurrency: 4
+  beat:
+    logfile: /Users/huncidd/Develop/Code/Self/Libs/lib-common/logs/celery_beat.log
+    loglevel: DEBUG

@@ -1,23 +1,23 @@
 import os
 from typing import Dict, Type
 from functools import lru_cache
-
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import (
-    BaseSettings as PydanticBaseSettings,
+    BaseSettings,
     SettingsConfigDict,
     PydanticBaseSettingsSource,
     YamlConfigSettingsSource,
     NestedSecretsSettingsSource,
 )
 
+from .app.schemas import AppConfigs
 from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
 from .connect.database.schemas import DBConfigsM
 from .connect.redis.schemas import RedisConfigsM
-from .app.schemas import AppConfigs
+from .tasker.schemas import CeleryConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -57,27 +57,27 @@ def get_model_config() -> SettingsConfigDict:
         secrets_nested_subdir=True,
         secrets_prefix="",
         case_sensitive=False,  # 忽略大小写
+        extra="ignore",
     )
 
 
-class BaseSettings(PydanticBaseSettings):
+class Settings(BaseSettings):
     """可继承的配置基类，应用可以继承此类添加自定义字段"""
 
     # 使用动态配置
     model_config = get_model_config()
 
+    app: AppConfigs = Field(default_factory=AppConfigs, description="App应用配置")
     loggers: Dict[str, LoggerConfigsM] = Field(default_factory=dict, description="日志配置")
-
     cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
-
     databases: Dict[str, DBConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
-    app: AppConfigs = Field(default_factory=AppConfigs, description="App应用配置")
+    tasker: CeleryConfigsM = Field(default_factory=dict, description="任务配置")
 
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: type[PydanticBaseSettings],
+        settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
@@ -93,19 +93,13 @@ class BaseSettings(PydanticBaseSettings):
         )
 
 
-class Settings(BaseSettings):
-    """默认配置类（保持现有代码兼容）"""
-    pass
-
-
 @lru_cache
-def get_settings(settings_class: Type[BaseSettings] = Settings) -> BaseSettings:
+def get_settings(settings_cls: Type[Settings] = Settings) -> Settings:
     """
     获取配置单例实例
-
     Args:
-        settings_class: 配置类，默认为 Settings
+        settings_cls: 配置类，默认为 Settings
     Returns:
         配置实例
     """
-    return settings_class()
+    return settings_cls()

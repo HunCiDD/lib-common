@@ -6,11 +6,13 @@ from pydantic import BaseModel, Field, create_model
 from fastapi import Request, Query, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from ..connect.database.funcs import SQLALCHEMY_OPERATOR_MAP
-from ..configs import settings, loggers, cryptors
+from ..connect.database.repository import operators
+from ..settings import get_settings
+from ..logger.configs import loggers
+from ..cryptor.configs import cryptors
 from .exceptions import UnauthorizedException, ForbiddenException
 
-
+settings = get_settings()
 run_logger = loggers.get_logger("run")
 cryptor = cryptors.get_cryptor("default")
 
@@ -74,7 +76,7 @@ class ConditionParams:
             # 基础类型
             self._model_fields[field_name] = (field_type, field_info)
             # 操作类型
-            for operator, func in SQLALCHEMY_OPERATOR_MAP.items():
+            for operator, func in operators.items():
                 operate_field_name = f"{field_name}{operator}"
                 # 根据操作符确定字段类型
                 if operator == "__in":

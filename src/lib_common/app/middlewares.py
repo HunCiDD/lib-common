@@ -4,9 +4,9 @@ import time
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from lib_common.data.generator import UuidGenerator
+from ..data.generator import UuidGenerator
 from ..logger.base import AppLogContextVar
-from ..configs import loggers
+from ..logger.configs import loggers
 
 run_logger = loggers.get_logger("run")
 

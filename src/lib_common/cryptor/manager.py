@@ -1,8 +1,8 @@
 from typing import Dict
 
 from ..designs.singleton import SingletonMeta
-from .base import Cryptor
 from ..settings import Settings
+from .base import Cryptor
 
 
 class CryptorManager(metaclass=SingletonMeta):

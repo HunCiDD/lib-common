@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from ..configs import loggers
+from ..logger.configs import loggers
 
 router = APIRouter(tags=["app_base"])
 run_logger = loggers.get_logger("run")

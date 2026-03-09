@@ -1,130 +1,97 @@
-from typing import Type, Any, Generic, List
+from typing import Type, Any, Generic, List, Dict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import SchemaAddT, SchemaSetT, SchemaGeTT
-from .schemas import PageData
-from ..configs import loggers
+from ..logger.configs import loggers
+from ..connect.database.types import M
+from ..connect.database.repository import BaseAsyncRepository
 from .exceptions import ServiceException
-from .repositories import BaseRepository, M
 from .decorators import with_transaction
 
 run_logger = loggers.get_logger("run")
 
 
 class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGeTT]):
-    def __init__(self, repo: BaseRepository[M], schema_cls: Type[SchemaGeTT]):
-        self.repo = repo
+    def __init__(self, model_cls: Type[M], schema_cls: Type[SchemaGeTT]):
+        self.model_cls = model_cls
         self.schema_cls = schema_cls
 
-    def _get_schema(self, model: M) -> SchemaGeTT:
-        return self.schema_cls(**model.as_dict())
-
-    async def _add_m(self, schema: SchemaAddT, conn: AsyncSession = None, **kwargs) -> M:
-        run_logger.debug(f"Schema: {schema}")
+    async def _add(self, conn: AsyncSession, schema: SchemaAddT) -> M:
+        run_logger.debug(f"Add, schema: {schema}")
         # 转换并排除未设置字段
         entity = schema.model_dump(exclude_unset=True)
-        model = await self.repo.add(conn, entity=entity, **kwargs)
-        if not model:
-            raise ServiceException(message="Failed add to db")
+        model = await BaseAsyncRepository.insert(conn, self.model_cls, values=entity)
         return model
 
-    async def _del_m(self, pk: str, conn: AsyncSession = None, **kwargs: Any):
-        """删除实体并返回操作状态"""
-        run_logger.debug(f"PK: {pk}")
-        await self.repo.delete(conn, pk, **kwargs)
+    async def _delete(self, conn: AsyncSession, pk: str, pk_name: str = "id") -> int:
+        run_logger.debug(f"Delete, {pk_name}: {pk}")
+        count = await BaseAsyncRepository.delete(conn, self.model_cls, filters={pk_name: pk})
+        return count
 
-    async def _set_m(self, pk: str, schema: SchemaSetT, conn: AsyncSession = None, **kwargs: Any) -> M:
-        """更新实体并返回更新后的完整表示"""
-        run_logger.debug(f"Pk: {pk}, Schema: {schema}")
+    async def _set(self, conn: AsyncSession, pk: str, schema: SchemaSetT, pk_name: str = "id") -> int:
+        run_logger.debug(f"Set, {pk_name}: {pk}, schema: {schema}")
         entity = schema.model_dump(exclude_unset=True)
-        model = await self.repo.set(conn, pk, entity, **kwargs)
-        if not model:
-            raise ServiceException(message="Failed set to db, Not found")
+        count = await BaseAsyncRepository.update(conn, self.model_cls, filters={pk_name: pk}, values=entity)
+        return count
+
+    async def _get(self, conn: AsyncSession, pk: str, pk_name: str = "id") -> M:
+        run_logger.debug(f"Get, {pk_name}: {pk}")
+        model = await BaseAsyncRepository.get(conn, self.model_cls, pk=pk)
         return model
 
-    async def _get_m(self, pk: str, conn: AsyncSession = None, **kwargs: Any) -> M:
-        """根据ID获取单个实体"""
-        run_logger.debug(f"Pk: {pk}")
-        model = await self.repo.get(conn, pk, **kwargs)
-        if not model:
-            raise ServiceException(message=f"Failed get from db, Not found {pk}")
-        return model
+    async def _list(
+        self,
+        conn: AsyncSession,
+        filters: Dict[str, Any] | None = None,
+        orders: Dict[str, Any] | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> List[M]:
 
-    async def _count_m(self, conn: AsyncSession = None, **kwargs: Any) -> int:
-        """统计符合条件的实体数量"""
-        return await self.repo.count(conn, **kwargs)
-
-    async def _list_m(self, conn: AsyncSession = None, **kwargs) -> List[M]:
-        run_logger.debug(f"Params: {kwargs}")
-        models = await self.repo.list(conn, **kwargs)
+        run_logger.debug(f"List, filters: {filters}, orders: {orders}, offset: {offset}, limit: {limit}")
+        models = await BaseAsyncRepository.list(
+            conn, self.model_cls, filters=filters, orders=orders, offset=offset, limit=limit
+        )
         return models
 
-    @staticmethod
-    def _page_data(items: List[SchemaGeTT] = None, total: int = 0, **kwargs) -> PageData[SchemaGeTT]:
-        paginator = kwargs.get("paginator", {"page": 1, "size": 10})
-        page = paginator.get("page", 1)
-        size = paginator.get("size", 10)
-        pages = (total + size - 1) // size
-        return PageData(items=items, page=page, size=size, total=total, pages=pages)
-
-    @staticmethod
-    async def _list_relations(name: str, relations_id: List[str], repo: BaseRepository[M], conn: AsyncSession) -> dict:
-        """
-        获取关系字段
-        :param name: 关系字段名称
-        :param relations_id: 关系id
-        :param repo:
-        :param conn:
-        :return:
-        """
-        if not relations_id:
-            return {}
-
-        relations = await repo.list(conn, filter={"id__in": relations_id})
-        if not relations:
-            raise ServiceException(message=f"Failed, {name.title()} not found in [{relations_id}]")
-        return {name: relations}
-
-    @staticmethod
-    async def _get_relations(name: str, relation_id: str, repo: BaseRepository[M], conn: AsyncSession) -> dict:
-        if not relation_id:
-            return {}
-
-        relation = await repo.get(conn, entity_id=relation_id)
-        if not relation:
-            raise ServiceException(message=f"Failed, {name.title()} not found in [{relation_id}]")
-        return {name: relation}
-
     @with_transaction
-    async def add(self, schema: SchemaAddT, conn: AsyncSession = None, **kwargs) -> SchemaGeTT:
-        model = await self._add_m(schema, conn=conn, **kwargs)
-        return self._get_schema(model)
+    async def add(self, schema: SchemaAddT, conn: AsyncSession = None) -> SchemaGeTT:
+        model = await self._add(conn, schema)
+        return model.to_schema(schema_cls=self.schema_cls)
 
     @with_transaction
     async def delete(self, pk: str, conn: AsyncSession = None, **kwargs: Any) -> bool:
-        await self._get_m(pk, conn=conn, **kwargs)
-        await self._del_m(pk, conn=conn, **kwargs)
+        model = await self._get(conn, pk)
+        if not model:
+            raise ServiceException("Failed delete, not found")
+
+        await self._delete(conn, pk)
         return True
 
     @with_transaction
-    async def set(self, pk: str, schema: SchemaSetT, conn: AsyncSession = None, **kwargs: Any) -> SchemaGeTT:
-        await self._get_m(pk, conn=conn, **kwargs)
-        model = await self._set_m(pk, schema, conn=conn, **kwargs)
-        return self._get_schema(model)
+    async def set(self, pk: str, schema: SchemaSetT, conn: AsyncSession = None) -> int:
+        model = await self._get(conn, pk)
+        if not model:
+            raise ServiceException("Failed set, not found")
+        return await self._set(conn, pk=pk, schema=schema)
 
     @with_transaction
-    async def get(self, pk: str, conn: AsyncSession = None, **kwargs: Any) -> SchemaGeTT:
-        model = await self._get_m(pk, conn=conn, **kwargs)
-        return self._get_schema(model)
+    async def get(self, pk: str, conn: AsyncSession = None) -> SchemaGeTT:
+        model = await self._get(conn, pk)
+        if not model:
+            raise ServiceException("Failed get, not found")
+        return model.to_schema(schema_cls=self.schema_cls)
 
     @with_transaction
-    async def count(self, conn: AsyncSession = None, **kwargs: Any) -> int:
-        return await self._count_m(conn=conn, **kwargs)
+    async def list(
+        self,
+        conn: AsyncSession = None,
+        filters: Dict[str, Any] | None = None,
+        orders: Dict[str, Any] | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> List[M]:
 
-    @with_transaction
-    async def list(self, conn: AsyncSession = None, **kwargs) -> PageData[SchemaGeTT]:
-        total = await self._count_m(conn=conn, **kwargs)
-        models = await self._list_m(conn=conn, **kwargs)
-        items = [self._get_schema(m) for m in models]
-        return self._page_data(items, total, **kwargs)
+        models = await self._list(conn, filters, orders, offset, limit)
+        return models

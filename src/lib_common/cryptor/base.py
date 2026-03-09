@@ -6,7 +6,7 @@ from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Util import Padding
 from Crypto.Util.strxor import strxor
 
-from lib_common.data.generator import RandomBytesGenerator
+from ..data.generator import RandomBytesGenerator
 from .schemas import CryptorRootConfigsM
 
 

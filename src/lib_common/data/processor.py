@@ -1,9 +1,8 @@
 # 数据处理器
-
+from typing import Any, List, Dict, Callable
 from datetime import datetime, UTC
 import pytz
 import pandas as pd
-
 
 __all__ = [
     "DictProcessor",
@@ -121,7 +120,7 @@ class DataFrameProcessor:
 
         missing_columns = [col for col in key_columns if col not in df_data.columns]
         if missing_columns:
-            raise KeyError(f"键列 {missing_cols} 不存在于DataFrame中")
+            raise KeyError(f"键列 {missing_columns} 不存在于DataFrame中")
 
         if not agg_methods:
             agg_methods = {}

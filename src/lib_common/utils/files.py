@@ -25,7 +25,7 @@ from defusedxml import ElementTree
 from dotenv import dotenv_values
 from yaml import safe_load
 
-from lib_common.data.encoder import JsonEncoder
+from ..data.encoder import JsonEncoder
 
 MODES = stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 FLAGS = {

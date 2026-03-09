@@ -1,8 +1,7 @@
 import os
 import pytest
 from pydantic import Field, SecretStr
-from typing import Dict, Optional
-from unittest.mock import Mock
+from typing import Dict
 from pydantic_settings import PydanticBaseSettingsSource
 
 from lib_common.settings import BaseSettings, Settings, get_settings
@@ -18,15 +17,14 @@ class TestBaseSettings(BaseSettings):
     测试专用的基类，提供有效的默认配置值
     避免 cryptors 等必填字段验证错误
     """
+
     # 覆盖 cryptors 字段，提供有效的默认值
     cryptors: CryptorConfigsM = Field(
         default_factory=lambda: CryptorConfigsM(
             root=CryptorRootConfigsM(
-                material=SecretStr("test_material"),
-                salt="test_salt",
-                secret=SecretStr("test_secret")
+                material=SecretStr("test_material"), salt="test_salt", secret=SecretStr("test_secret")
             ),
-            work={}
+            work={},
         )
     )
 
@@ -44,7 +42,7 @@ class TestBaseSettings(BaseSettings):
             version="1.0.0",
             host="127.0.0.1",
             port=8000,
-            tz="Asia/Shanghai"
+            tz="Asia/Shanghai",
         )
     )
 
@@ -71,6 +69,7 @@ class TestSettingsExtendable:
 
     def test_base_settings_can_be_extended(self):
         """测试 BaseSettings 可以被继承并添加新字段"""
+
         class ExtendedSettings(TestBaseSettings):
             custom_field: str = Field(default="default_value")
             extra_config: Dict[str, int] = Field(default_factory=dict)
@@ -91,6 +90,7 @@ class TestSettingsExtendable:
 
     def test_get_settings_with_subclass(self):
         """测试 get_settings 函数支持子类参数"""
+
         class ExtendedSettings(TestBaseSettings):
             custom_field: str = Field(default="custom_value")
 
@@ -120,6 +120,7 @@ class TestSettingsExtendable:
 
     def test_config_loading_inheritance(self):
         """测试配置加载逻辑被继承"""
+
         # 使用 BaseSettings 而不是 TestBaseSettings，以测试原始配置加载逻辑
         class ExtendedSettings(BaseSettings):
             custom_field: str = Field(default="default")
@@ -135,6 +136,7 @@ class TestSettingsExtendable:
 
     def test_field_validation_inheritance(self):
         """测试字段验证器在继承链中工作"""
+
         class ExtendedSettings(TestBaseSettings):
             api_key: SecretStr = Field(default=SecretStr("default_key"))
 
@@ -170,6 +172,7 @@ class TestSettingsExtendable:
 
     def test_model_config_inheritance(self):
         """测试 model_config 被继承"""
+
         class ExtendedSettings(TestBaseSettings):
             custom_field: str = Field(default="default")
 
@@ -184,6 +187,7 @@ class TestSettingsExtendable:
 
     def test_multiple_inheritance_levels(self):
         """测试多级继承"""
+
         class IntermediateSettings(TestBaseSettings):
             intermediate_field: str = Field(default="intermediate")
 
@@ -197,6 +201,7 @@ class TestSettingsExtendable:
 
     def test_field_name_conflict(self):
         """测试字段名冲突处理（子类字段覆盖父类字段）"""
+
         class ConflictingSettings(TestBaseSettings):
             # 尝试添加与父类同名的字段（应该覆盖）
             loggers: Dict[str, str] = Field(default_factory=dict)  # 类型不同
@@ -210,6 +215,7 @@ class TestSettingsExtendable:
 
     def test_instance_equality(self):
         """测试不同子类的实例不同"""
+
         class SettingsA(TestBaseSettings):
             field_a: str = Field(default="a")
 
@@ -231,6 +237,7 @@ class TestSettingsWithRealConfig:
 
     def test_settings_with_minimal_config(self):
         """测试使用最小化配置（避免验证错误）"""
+
         # 创建临时配置类，覆盖 cryptors 等必填字段
         class MinimalSettings(BaseSettings):
             # 提供必要的字段以避免验证错误

@@ -1,9 +1,9 @@
 from typing import Dict
 from threading import Lock
 
-from .schemas import DBConfigsM
 from ...designs.singleton import SingletonMeta
 from ...settings import Settings
+from .schemas import DBConfigsM
 from .base import IDBInfra, IAsyncDBInfra, DBInfraFactory
 
 

@@ -6,9 +6,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import T
+from ..logger.configs import loggers
 from ..connect.database.base import BaseModel
 from ..connect.database.repository import AsyncBaseRepository
-from ..logger.configs import loggers
 
 run_logger = loggers.get_logger("run")
 

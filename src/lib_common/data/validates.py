@@ -3,7 +3,7 @@ import re
 from ipaddress import ip_address
 from pathlib import Path
 
-from lib_common.data.converter import IntConverter, StringConverter
+from .converter import IntConverter, StringConverter
 
 
 def validate_bool(value: str | bool | int) -> bool:

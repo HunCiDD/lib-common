@@ -1,14 +1,14 @@
 from __future__ import annotations
-from typing import List, Generic
+from typing import Dict, List, Generic, Type, Any
 from abc import ABC, abstractmethod
 
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from ...types import T
+from ...types import T, SchemaGeTT
 from ...designs.factory import RegisterFactory
-from lib_common.data.validates import validate_path
+from ...data.validates import validate_path
 from .schemas import DBConfigsM
 
 
@@ -41,6 +41,9 @@ class BaseModel(Base):
                 pass
 
         return _dict
+
+    def to_schema(self, schema_cls: Type[SchemaGeTT]) -> SchemaGeTT:
+        return schema_cls(**self.as_dict())
 
 
 # 同步设施

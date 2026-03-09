@@ -1,6 +1,4 @@
 # 编码器
-__all__ = ["JsonEncoder"]
-
 import json
 from datetime import datetime
 from decimal import Decimal
@@ -8,6 +6,9 @@ from uuid import UUID
 
 from numpy import int64, issubdtype, number
 from pandas import DataFrame
+
+
+__all__ = ["JsonEncoder"]
 
 
 class JsonEncoder(json.JSONEncoder):
