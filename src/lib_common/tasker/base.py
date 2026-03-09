@@ -8,7 +8,7 @@ from celery.beat import Scheduler
 
 from ..settings import Settings, get_settings
 from ..logger.configs import loggers
-from .schemas import CeleryWorkerConfigsM, CeleryBeatConfigsM
+from .schemas import CeleryConfigsM
 from .scheduer import DatabaseScheduler
 
 run_logger = loggers.get_logger("run")
@@ -17,7 +17,8 @@ run_logger = loggers.get_logger("run")
 class CeleryBase:
     tag = "base"
 
-    def __init__(self) -> None:
+    def __init__(self, configs: CeleryConfigsM) -> None:
+        self.configs = configs
         self._process: subprocess.Popen | None = None
 
     def run(self):
@@ -53,22 +54,18 @@ class CeleryBase:
 class CeleryWork(CeleryBase):
     tag = "worker"
 
-    def __init__(self, config: CeleryWorkerConfigsM):
-        super().__init__()
-        self.config = config
-
     def _run_process(self) -> subprocess.Popen:
         run_logger.info(f"Run celery {self.tag} process.")
         env = os.environ.copy()
         args = [
             "celery",
             "-A",
-            "src.appc_tasks.base",
+            f"{self.configs.app}",
             "worker",
-            f"--loglevel={self.config.loglevel}",
-            f"--logfile={self.config.logfile}",
-            f"--pool={self.config.pool or 'threads'}",
-            f"--concurrency={self.config.concurrency or 5}",
+            f"--loglevel={self.configs.worker.loglevel}",
+            f"--logfile={self.configs.worker.logfile}",
+            f"--pool={self.configs.worker.pool or 'threads'}",
+            f"--concurrency={self.configs.worker.concurrency or 5}",
         ]
         process = subprocess.Popen(args, env=env)
         run_logger.info(f"Run celery worker process with PID: {process.pid}")
@@ -78,10 +75,6 @@ class CeleryWork(CeleryBase):
 class CeleryBeat(CeleryBase):
     tag = "beat"
 
-    def __init__(self, config: CeleryBeatConfigsM):
-        super().__init__()
-        self.config = config
-
     def _run_process(self) -> subprocess.Popen:
         run_logger.info(f"Run celery {self.tag} process.")
         env = os.environ.copy()
@@ -90,8 +83,8 @@ class CeleryBeat(CeleryBase):
             "-A",
             "src.appc_tasks.base",
             "beat",
-            f"--loglevel={self.config.loglevel}",
-            f"--logfile={self.config.logfile}",
+            f"--loglevel={self.configs.beat.loglevel}",
+            f"--logfile={self.configs.beat.logfile}",
         ]
         process = subprocess.Popen(args, env=env)
         run_logger.info(f"Celery beat started with PID: {process.pid}")

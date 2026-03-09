@@ -85,6 +85,7 @@ redis:
 
 tasker:
   run: true
+  app: a
   broker: "redis://localhost:6379/0"
   backend: "db+postgresql+psycopg2://root:123456@localhost:3306/base-backend"
   worker:
