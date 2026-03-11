@@ -10,3 +10,8 @@ run_logger = loggers.get_logger("run")
 async def home():
     run_logger.info("home")
     return {"message": "Hello World"}
+
+
+@router.get("/health")
+async def health():
+    return {"status": "alive"}

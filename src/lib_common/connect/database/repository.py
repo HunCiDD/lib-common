@@ -258,7 +258,7 @@ def build_stmt_select(
     return stmt
 
 
-class BaseRepository:
+class Repository:
     """
     同步 SQLAlchemy 基础仓库类，提供通用的 CRUD 操作。
     所有方法均不自动提交事务，由调用方控制 session.commit()。
@@ -383,7 +383,7 @@ class BaseRepository:
         return result.scalars().all()
 
 
-class BaseAsyncRepository:
+class AsyncRepository:
     """
     异步 SQLAlchemy 基础仓库类，提供通用的 CRUD 操作。
     所有方法均不自动提交事务，由调用方控制 await session.commit()。

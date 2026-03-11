@@ -22,7 +22,7 @@ T = TypeVar("T")
 # 模型泛型
 SchemaAddT = TypeVar("SchemaAddT", bound=BaseModel)
 SchemaSetT = TypeVar("SchemaSetT", bound=BaseModel)
-SchemaGeTT = TypeVar("SchemaGeTT", bound=BaseModel)
+SchemaGetT = TypeVar("SchemaGetT", bound=BaseModel)
 SchemaDataT = TypeVar("SchemaDataT", bound=BaseModel)
 
 # 何时使用 BeforeValidator：1-预处理原始输入数据，2-解析复杂字符串格式，3-数据格式转换

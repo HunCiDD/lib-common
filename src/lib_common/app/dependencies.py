@@ -115,12 +115,12 @@ class ConditionParams:
         return _query
 
     @staticmethod
-    def _parse_sorter(sort: str) -> dict:
-        if not sort:
+    def _parse_orders(orders: str) -> dict:
+        if not orders:
             return {}
 
         _sorter = {}
-        for field in sort.split(","):
+        for field in orders.split(","):
             field = field.strip()
             if ":" in field:
                 field_describe = [x.strip() for x in field.split(":")]
@@ -134,18 +134,16 @@ class ConditionParams:
         return _sorter
 
     def __call__(
-        self,
-        request: Request,
-        page: int = Query(1, ge=1, description="页码"),
-        size: int = Query(10, ge=1, le=100, description="每页数量"),
-        sort: str | None = Query(None, title="排序字段", description="格式:field1:asc,field2:desc"),
+            self,
+            request: Request,
+            orders: str | None = Query(None, title="排序字段", description="格式:field1:asc,field2:desc"),
+            page: int = Query(1, ge=1, description="页码"),
+            size: int = Query(10, ge=1, le=100, description="每页数量"),
     ) -> Dict[str, Any]:
         query_params = self._parse_query(request)
         # 过滤参数
         _filter = self._model(**query_params).model_dump(exclude_none=True)
-        # 分页参数
-        _paginator = {"offset": (page - 1) * size, "limit": size, "page": page, "size": size}
         # 排序参数
-        _sorter = self._parse_sorter(sort)
+        _orders = self._parse_orders(orders)
+        return {"filters": _filter, "orders": _orders, "page": page, "size": size}
 
-        return {"filter": _filter, "paginator": _paginator, "sorter": _sorter}

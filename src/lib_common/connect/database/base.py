@@ -6,7 +6,7 @@ from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from ...types import T, SchemaGeTT
+from ...types import T, SchemaGetT
 from ...designs.factory import RegisterFactory
 from ...data.validates import validate_path
 from .schemas import DBConfigsM
@@ -42,7 +42,7 @@ class BaseModel(Base):
 
         return _dict
 
-    def to_schema(self, schema_cls: Type[SchemaGeTT]) -> SchemaGeTT:
+    def to_schema(self, schema_cls: Type[SchemaGetT]) -> SchemaGetT:
         return schema_cls(**self.as_dict())
 
 
