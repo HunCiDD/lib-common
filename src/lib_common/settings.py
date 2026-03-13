@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Type
+from typing import Dict, Type, TypeVar
 from functools import lru_cache
 from pathlib import Path
 
@@ -93,8 +93,11 @@ class Settings(BaseSettings):
         )
 
 
+SettingType = TypeVar("SettingType", bound=Settings)
+
+
 @lru_cache
-def get_settings(settings_cls: Type[Settings] = Settings) -> Settings:
+def get_settings[SettingType: Settings](settings_cls: Type[SettingType] = Settings) -> SettingType:
     """
     获取配置单例实例
     Args:

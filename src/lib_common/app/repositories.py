@@ -33,12 +33,12 @@ class BaseRepository(Generic[M]):
         return await AsyncRepository.get(conn, self.model_cls, pk=pk)
 
     async def list(
-            self,
-            conn: AsyncSession,
-            filters: Dict[str, Any] | None = None,
-            orders: Dict[str, Any] | None = None,
-            offset: int = 0,
-            limit: int = 100,
+        self,
+        conn: AsyncSession,
+        filters: Dict[str, Any] | None = None,
+        orders: Dict[str, Any] | None = None,
+        offset: int = 0,
+        limit: int = 100,
     ) -> List[M]:
         """
         根据条件过滤查询结构

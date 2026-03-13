@@ -50,12 +50,12 @@ class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGetT]):
 
     @with_transaction
     async def list(
-            self,
-            conn: AsyncSession = None,
-            filters: Dict[str, Any] | None = None,
-            orders: Dict[str, Any] | None = None,
-            page: int = 1,
-            size: int = 20,
+        self,
+        conn: AsyncSession = None,
+        filters: Dict[str, Any] | None = None,
+        orders: Dict[str, Any] | None = None,
+        page: int = 1,
+        size: int = 20,
     ) -> PageData[SchemaGetT]:
         offset, limit = (page - 1) * size, size
         models = await self.repo.list(conn, filters, orders, offset, limit)
