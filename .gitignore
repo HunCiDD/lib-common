@@ -210,3 +210,4 @@ __marimo__/
 # Sensitive data
 secrets/
 configs/config.yaml
+/secrets/
