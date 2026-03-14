@@ -45,10 +45,22 @@ def validate_ip(ip: str) -> str:
 
 
 def validate_domain(domain: str) -> str:
-    pattern = r"^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))*\.[a-z]{2,}$"
-    if re.match(pattern, domain, re.IGNORECASE):
-        return domain.lower()
-    raise ValueError(f"Invalid hostname: {domain}")
+    if not domain:
+        raise ValueError("Hostname cannot be empty")
+
+    # 区分单标签和标准域名
+    if '.' in domain:
+        # 标准域名：必须包含至少一个点，且最后一个标签（顶级域）至少两个字母
+        pattern = r"^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))*\.[a-z]{2,}$"
+        if not re.match(pattern, domain, re.IGNORECASE):
+            raise ValueError(f"Invalid domain name: {domain}")
+    else:
+        # 单标签主机名：仅由字母、数字、连字符组成，不能以连字符开头或结尾，长度 1~63
+        pattern = r"^(?!-)[a-z0-9-]{1,63}(?<!-)$"
+        if not re.match(pattern, domain, re.IGNORECASE):
+            raise ValueError(f"Invalid hostname: {domain}")
+
+    return domain.lower()
 
 
 def validate_host(host: str) -> str:

@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
     databases: Dict[str, DBConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
-    tasker: CeleryConfigsM = Field(default_factory=dict, description="任务配置")
+    tasker: CeleryConfigsM | None = Field(default_factory=dict, description="任务配置")
 
     @classmethod
     def settings_customise_sources(

@@ -19,9 +19,9 @@ class CeleryBeatConfigsM(BaseModel):
 
 class CeleryConfigsM(BaseModel):
     run: bool | None = False
-    app: str
-    broker: str
-    backend: str
+    app: str | None = None
+    broker: str | None = None
+    backend: str | None = None
     worker: CeleryWorkerConfigsM | None = None
     beat: CeleryBeatConfigsM | None = None
 
