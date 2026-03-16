@@ -9,7 +9,7 @@ from celery.beat import Scheduler
 from ..settings import Settings, get_settings
 from ..logger.configs import loggers
 from .schemas import CeleryConfigsM
-from .scheduer import DatabaseScheduler
+from .scheduler import DatabaseScheduler
 
 run_logger = loggers.get_logger("run")
 
@@ -67,6 +67,7 @@ class CeleryWork(CeleryBase):
             f"--pool={self.configs.worker.pool or 'threads'}",
             f"--concurrency={self.configs.worker.concurrency or 5}",
         ]
+        run_logger.info(f"Run celery worker args: {args}")
         process = subprocess.Popen(args, env=env)
         run_logger.info(f"Run celery worker process with PID: {process.pid}")
         return process
@@ -86,8 +87,9 @@ class CeleryBeat(CeleryBase):
             f"--loglevel={self.configs.beat.loglevel}",
             f"--logfile={self.configs.beat.logfile}",
         ]
+        run_logger.info(f"Run celery beat args: {args}")
         process = subprocess.Popen(args, env=env)
-        run_logger.info(f"Celery beat started with PID: {process.pid}")
+        run_logger.info(f"Run Celery beat process with PID: {process.pid}")
         return process
 
 
@@ -113,4 +115,5 @@ def get_celery(scheduler_cls: Type[Scheduler] = DatabaseScheduler) -> Celery:
 
     # 设置自定义调度器
     _celery.conf.beat_scheduler = scheduler_cls  # type: ignore
+    _celery.autodiscover_tasks(settings.tasker.tasks)
     return _celery

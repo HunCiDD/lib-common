@@ -23,6 +23,8 @@ class DatabaseSchedulerEntry(ScheduleEntry):
             if len(parts) != 5:
                 raise ValueError("Cron expression must have 5 fields")
             minute, hour, day_of_month, month_of_year, day_of_week = parts
+            run_logger.debug(f"Cron expression: minute-{minute}, hour-{hour}, day_of_month-{day_of_month}, "
+                             f"month_of_year-{month_of_year}, day_of_week-{day_of_week}")
             schedule = crontab(
                 minute=minute,
                 hour=hour,
@@ -35,14 +37,14 @@ class DatabaseSchedulerEntry(ScheduleEntry):
             # 使用一个永远不会触发的 cron，避免崩溃
             schedule = crontab(minute="*")  # 或抛出异常
             job.enabled = False  # 禁用无效任务
-
+        run_logger.debug(f"Job: name-{self.job.name}, t_name-{self.job.t_name}, "
+                         f"t_args-{self.job.t_args}, t_kwargs-{self.job.t_kwargs}")
         super().__init__(
             name=self.job.name,
             task=self.job.t_name,
             schedule=schedule,
             args=self.job.t_args,
-            kwargs=self.job.t_kwargs,
-            options={"queue": "default"},
+            kwargs=self.job.t_kwargs
         )
 
     def is_due(self):
@@ -51,6 +53,7 @@ class DatabaseSchedulerEntry(ScheduleEntry):
             return False, None
 
         last_run_at = self.job.next_run_at or datetime.now(UTC)
+        run_logger.debug(f"Is due last_run_at={last_run_at}")
         return self.schedule.is_due(last_run_at)
 
     def __next__(self):
@@ -73,24 +76,36 @@ class DatabaseScheduler(Scheduler):
     def setup_schedule(self): ...
 
     def get_schedule(self):
+        run_logger.debug("Get schedule...")
         self._refresh_schedule()
         return self._schedules
 
     def _refresh_schedule(self):
         """从数据库加载定时任务，更新调度表"""
-        with local_db.connection() as conn:
-            jobs = conn.query(TaskCronJob).filter(TaskCronJob.enabled).all()
-            new_schedule = {}
-            for job in jobs:
-                entry = self.Entry(job)
-                new_schedule[entry.name] = entry
-            self._schedule = new_schedule
-            self._last_updated = datetime.now()
+        with self._lock:
+            with local_db.connection() as conn:
+                now = datetime.now(UTC)
+                # 查询条件：启用且（next_run_at 为空 或 已到达或超过）
+                jobs = (
+                    conn.query(TaskCronJob)
+                    .filter(
+                        TaskCronJob.enabled == True,
+                        (TaskCronJob.next_run_at == None) | (TaskCronJob.next_run_at <= now),
+                    )
+                    .all()
+                )
+                run_logger.debug(f"Jobs: {jobs}")
+                new_schedule = {}
+                for job in jobs:
+                    entry = self.Entry(job)
+                    new_schedule[entry.name] = entry
+                self._schedule = new_schedule
+                self._last_updated = datetime.now()
 
     def tick(self):
         """被 beat 循环调用，返回下次唤醒的秒数"""
-        with self._lock:
-            # 定期刷新调度表（比如每5分钟重新读取一次数据库，以便捕获新增/修改的任务）
-            if not self._last_updated or (datetime.now() - self._last_updated).total_seconds() > 300:
-                self._refresh_schedule()
-            return super().tick()
+        run_logger.debug("Tick...")
+        # 定期刷新调度表（比如每5分钟重新读取一次数据库，以便捕获新增/修改的任务）
+        if not self._last_updated or (datetime.now() - self._last_updated).total_seconds() > 300:
+            self._refresh_schedule()
+        return super().tick()

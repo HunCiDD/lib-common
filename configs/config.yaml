@@ -63,7 +63,7 @@ databases:
       username: postgres
       password: hdd12345
     dialect: postgresql
-    driver: asyncpg
+    driver: psycopg
     database: appc-test
   test:
     type: SQLAlchemyDB

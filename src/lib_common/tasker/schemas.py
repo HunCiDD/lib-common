@@ -20,6 +20,7 @@ class CeleryBeatConfigsM(BaseModel):
 class CeleryConfigsM(BaseModel):
     run: bool | None = False
     app: str | None = None
+    tasks: List[str] | None = None
     broker: str | None = None
     backend: str | None = None
     worker: CeleryWorkerConfigsM | None = None
