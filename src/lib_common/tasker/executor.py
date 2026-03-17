@@ -29,7 +29,13 @@ class TaskExecutor:
         with local_db.connection() as conn:
             try:
                 record_id = str(UuidGenerator.by_time())
-                record = JobRecord(id=record_id, config_id=self.configs.id, status=JobStatus.pending)
+                record = JobRecord(
+                    id=record_id,
+                    config_id=self.configs.id,
+                    status=JobStatus.pending,
+                    args=self.configs.t_args,
+                    kwargs=self.configs.t_kwargs
+                )
                 conn.add(record)
                 conn.flush()
                 tasker_logger.info(f"Add pending JobRecord {self.configs.t_name}...")
