@@ -1,54 +1,39 @@
-from typing import Any, List, Dict
-
+from typing import List
 from pydantic import BaseModel, Field
 
-from ..types import PathType, UpperType, LowerType
+
+class TaskerConfigsM(BaseModel):
+    tasks: List[str] = []
 
 
-class CeleryWorkerConfigsM(BaseModel):
-    logfile: PathType | None = None
-    loglevel: UpperType = "DEBUG"
-    pool: LowerType = "threads"
-    concurrency: int = 4
-
-
-class CeleryBeatConfigsM(BaseModel):
-    logfile: PathType | None = None
-    loglevel: UpperType = "DEBUG"
-
-
-class CeleryConfigsM(BaseModel):
-    run: bool | None = False
-    app: str | None = None
-    tasks: List[str] | None = None
-    broker: str | None = None
-    backend: str | None = None
-    worker: CeleryWorkerConfigsM | None = None
-    beat: CeleryBeatConfigsM | None = None
-
-
-class TaskCronJobBase(BaseModel):
-    name: str = Field(..., max_length=255, title="定时任务名称")
-    expression: str = Field("", title="cron表达式")
-    t_name: str
-    t_args: List[Any] = []
-    t_kwargs: Dict[str, Any] = {}
-    enabled: bool = True
-    one_off: bool = False
-
-
-class TaskCronJobAdd(BaseModel):
-    name: str = Field(..., max_length=255, title="定时任务名称")
-    expression: str = Field("", title="cron表达式")
-    t_name: str = Field(..., max_length=255, title="映射任务名")
-
-
-class TaskCronJobGet(BaseModel):
-    id: str = Field(..., max_length=64)
+class JobConfig(BaseModel):
     name: str
+    description: str | None
+    category: str = "date"
+    expression: str
+    t_name: str
+    t_args: list = []
+    t_kwargs: dict = {}
+    is_active: bool = False
 
 
-class TaskCronJobSet(BaseModel): ...
+class JobConfigGet(JobConfig):
+    id: str
 
 
-class TaskCronJobList(BaseModel): ...
+class JobConfigAdd(JobConfig): ...
+
+
+class JobConfigSet(JobConfig):
+    id: str
+    name: str | None = None
+    category: str | None = None
+    expression: str | None = None
+    t_name: str | None = None
+    t_args: list | None = None
+    t_kwargs: dict | None = None
+    is_active: bool | None = None
+
+
+class JobConfigFilter(JobConfigSet):
+    id: str | None = Field(None, max_length=64)

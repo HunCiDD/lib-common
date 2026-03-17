@@ -1,8 +1,9 @@
 from ..app.services import BaseService
-from .models import TaskCronJob
-from .schemas import TaskCronJobAdd, TaskCronJobSet, TaskCronJobGet
+from .models import JobConfig
+from .schemas import JobConfigAdd, JobConfigSet, JobConfigGet
+from .repositories import job_config_repo
 
 
-class TaskCronJobService(BaseService[TaskCronJob, TaskCronJobAdd, TaskCronJobSet, TaskCronJobGet]):
+class JobConfigService(BaseService[JobConfig, JobConfigAdd, JobConfigSet, JobConfigGet]):
     def __init__(self):
-        super().__init__(model_cls=TaskCronJob, schema_cls=TaskCronJobGet)
+        super().__init__(repo=job_config_repo, schema_cls=TaskCronJobGet)

@@ -17,7 +17,7 @@ from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
 from .connect.database.schemas import DBConfigsM
 from .connect.redis.schemas import RedisConfigsM
-from .tasker.schemas import CeleryConfigsM
+from .tasker.schemas import TaskerConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
     databases: Dict[str, DBConfigsM] = Field(default_factory=dict, description="数据库配置")
     redis: Dict[str, RedisConfigsM] = Field(default_factory=dict, description="Redis配置")
-    tasker: CeleryConfigsM | None = Field(default=None, description="任务配置")
+    tasker: TaskerConfigsM | None = Field(default=None, description="Tasker配置")
 
     @classmethod
     def settings_customise_sources(

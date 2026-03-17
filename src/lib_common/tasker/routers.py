@@ -1,28 +1,71 @@
 from fastapi import APIRouter, Depends, status
 
-from ..app.schemas import Response
-from .schemas import TaskCronJobGet
-from .services import TaskCronJobService
-from .dependencies import task_cron_job_service
+from ..app.schemas import Response, PageData
+from ..app.dependencies import PermissionChecker, ConditionParams
+from .schemas import JobConfigAdd, JobConfigSet, JobConfigGet, JobConfigFilter
+from .services import JobConfigService
+from .dependencies import job_config_service
+
 
 router = APIRouter(prefix="/tasker", tags=["tasker"])
 
 
-# @router.get(
-#     "/cron_jobs",
-#     response_model=Response[PageData[TaskCronJobGet]],
-#     status_code=status.HTTP_200_OK,
-#     dependencies=[Depends(PermissionChecker("auth:menu_resources:list"))],
-# )
-# async def list_cron_jobs():
-#     return {"code": 200, "data": []}
+@router.get(
+    "/job_configs",
+    response_model=Response[PageData[JobConfigGet]],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(PermissionChecker("auth:menu_resources:list"))],
+)
+async def list_job_configs(
+    conditions: dict = Depends(ConditionParams(JobConfigFilter)),
+    service: JobConfigService = Depends(job_config_service),
+):
+    data = await service.list(**conditions)
+    return {"code": 200, "data": data}
 
 
 @router.get(
-    "/cron_jobs/{cron_job_id}",
-    response_model=Response[TaskCronJobGet],
+    "/job_configs/{job_config_id}",
+    response_model=Response[JobConfigGet],
     status_code=status.HTTP_200_OK,
 )
-async def get_cron_job(cron_job_id: str, service: TaskCronJobService = Depends(task_cron_job_service)):
-    data = await service.get(cron_job_id)
+async def get_job_config(job_config_id: str, service: JobConfigService = Depends(job_config_service)):
+    data = await service.get(job_config_id)
     return {"code": 200, "data": data}
+
+
+@router.post(
+    "/job_configs",
+    response_model=Response[JobConfigGet],
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(PermissionChecker("auth:menu_resources:add"))],
+)
+async def add_job_config(
+    job_config: JobConfigAdd, service: JobConfigService = Depends(job_config_service)
+):
+    data = await service.add(job_config)
+    return {"code": 200, "data": data}
+
+
+@router.put(
+    "/job_configs/{job_config_id}",
+    response_model=Response[JobConfigGet],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(PermissionChecker("auth:menu_resources:set"))],
+)
+async def set_job_config(
+    job_config_id: str, job_config: JobConfigSet, service: JobConfigService = Depends(job_config_service)
+):
+    data = await service.set(job_config_id, job_config)
+    return {"code": 200, "data": data}
+
+
+@router.delete(
+    "/job_configs/{job_config_id}",
+    response_model=Response[str],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(PermissionChecker("auth:menu_resources:del"))],
+)
+async def del_job_config(job_config_id: str, service: JobConfigService = Depends(job_config_service)):
+    await service.delete(job_config_id)
+    return {"code": 200, "data": "success"}

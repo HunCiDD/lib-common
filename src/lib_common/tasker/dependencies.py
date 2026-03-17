@@ -1,5 +1,5 @@
-from .services import TaskCronJobService
+from .services import JobConfigService
 
 
-async def task_cron_job_service() -> TaskCronJobService:
-    return TaskCronJobService()
+async def job_config_service() -> JobConfigService:
+    return JobConfigService()
