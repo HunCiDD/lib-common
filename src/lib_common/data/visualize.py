@@ -2,18 +2,19 @@ from typing import Dict, Any, Type
 
 import pandas as pd
 
-from ...logger.configs import loggers
-from ...connect.database.types import M
-from ...connect.database.repository import Repository
-from ..converter import ListConverter
-from .base import DataStrategy, DataStrategyFactory
+from ..logger.configs import loggers
+from ..connect.database.types import M
+from ..connect.database.repository import Repository
+from .converter import ListConverter
+from .strategy import Strategy, StrategyFactory
 
 
 run_logger = loggers.get_logger("run")
 
 
 # 基础可视化策略
-class BaseVisualizeStrategy(DataStrategy):
+@StrategyFactory.register("base.visualize")
+class BaseVisualizeStrategy(Strategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
         super().__init__(name=name, category="visualize", in_key=in_key, out_key=out_key, **kwargs)
         # 待可视化数据

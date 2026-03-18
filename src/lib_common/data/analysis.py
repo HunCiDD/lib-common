@@ -2,18 +2,19 @@ from typing import Dict, Any, Type
 
 import pandas as pd
 
-from ...logger.configs import loggers
-from ...connect.database.types import M
-from ...connect.database.repository import Repository
-from ..converter import ListConverter
-from .base import DataStrategy, DataStrategyFactory
+from ..logger.configs import loggers
+from ..connect.database.types import M
+from ..connect.database.repository import Repository
+from .converter import ListConverter
+from .strategy import Strategy, StrategyFactory
 
 
 run_logger = loggers.get_logger("run")
 
 
 # 基础分析策略
-class BaseAnalysisStrategy(DataStrategy):
+@StrategyFactory.register("base.analysis")
+class BaseAnalysisStrategy(Strategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
         super().__init__(name=name, category="analysis", in_key=in_key, out_key=out_key, **kwargs)
         # 待分析数据

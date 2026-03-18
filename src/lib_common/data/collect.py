@@ -4,16 +4,19 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from ...logger.configs import loggers
-from ...connect.database.types import M
-from ...connect.database.repository import Repository
-from ..converter import ListConverter
-from .base import DataStrategy, DataStrategyFactory
+from ..logger.configs import loggers
+from ..connect.database.types import M
+from ..connect.database.repository import Repository
+from .converter import ListConverter
+from .strategy import Strategy, StrategyFactory
+
 
 run_logger = loggers.get_logger("run")
 
 
-class BaseCollectStrategy(DataStrategy):
+# 基础采集策略
+@StrategyFactory.register("base.collect")
+class BaseCollectStrategy(Strategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
         super().__init__(name=name, category="collect", in_key=in_key, out_key=out_key, **kwargs)
         self.df_collect_rst = pd.DataFrame()
@@ -35,7 +38,7 @@ class BaseCollectStrategy(DataStrategy):
         run_logger.info(f"成功保存到上下文：{self.out_key}")
 
 
-@DataStrategyFactory.register("ExeclCollectStrategy")
+@StrategyFactory.register("execl.collect")
 class ExeclCollectStrategy(BaseCollectStrategy):
     """
     通用文件加载接口：根据文件扩展名自动读取 CSV 或 Excel 文件为 pandas DataFrame。
@@ -65,7 +68,7 @@ class ExeclCollectStrategy(BaseCollectStrategy):
             raise ValueError(f"不支持的文件格式: {suffix}，仅支持 .csv, .xls, .xlsx")
 
 
-@DataStrategyFactory.register("DBCollectStrategy")
+@StrategyFactory.register("db.collect")
 class DBCollectStrategy(BaseCollectStrategy):
     def __init__(
         self,
@@ -118,6 +121,7 @@ class DBCollectStrategy(BaseCollectStrategy):
             return ListConverter.to_dataframe([row.as_dict() for row in rows])
 
 
+@StrategyFactory.register("db.sql.collect")
 class DBSqlCollectStrategy(BaseCollectStrategy):
     """
     数据库通过 SQL 采集数据，支持参数绑定。

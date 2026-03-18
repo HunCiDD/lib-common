@@ -5,16 +5,17 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from ...logger.configs import loggers
-from ...connect.database.types import M
-from ...connect.database.repository import BaseRepository
-from .base import DataStrategy, DataStrategyFactory
+from ..logger.configs import loggers
+from ..connect.database.types import M
+from ..connect.database.repository import Repository
+from .strategy import Strategy, StrategyFactory
 
 run_logger = loggers.get_logger("run")
 
 
 # 基础存储策略
-class BaseStorageStrategy(DataStrategy):
+@StrategyFactory.register("base.storage")
+class BaseStorageStrategy(Strategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
         super().__init__(name=name, in_key=in_key, out_key=out_key, category="storage", **kwargs)
         # 待存储的数据
@@ -35,7 +36,7 @@ class BaseStorageStrategy(DataStrategy):
     def store(self, context: Dict[str, Any]) -> None: ...
 
 
-@DataStrategyFactory.register("ExeclStorageStrategy")
+@StrategyFactory.register("execl.storage")
 class ExeclStorageStrategy(BaseStorageStrategy):
     """
     通用文件存储接口：根据 pandas DataFrame，存储为 文件扩展名自动读取 CSV 或 Excel 文件为
@@ -62,7 +63,7 @@ class ExeclStorageStrategy(BaseStorageStrategy):
             raise ValueError(f"不支持的文件格式: {self.suffix}，仅支持 .csv, .xls, .xlsx")
 
 
-@DataStrategyFactory.register("DBStorageStrategy")
+@StrategyFactory.register("db.storage")
 class DBStorageStrategy(BaseStorageStrategy):
     """
     通用数据库存储接口：根据 pandas DataFrame，存储到对应表
@@ -94,4 +95,4 @@ class DBStorageStrategy(BaseStorageStrategy):
 
     def store(self, context: Dict[str, Any]) -> None:
         records = self.df_storage.to_dict(orient="records")
-        BaseRepository.upsert(self.session, self.model_cls, records, self.conflict_columns)
+        Repository.upsert(self.session, self.model_cls, records, self.conflict_columns)

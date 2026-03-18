@@ -2,14 +2,15 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from ...logger.configs import loggers
-from .base import DataStrategy
+from ..logger.configs import loggers
+from .strategy import Strategy, StrategyFactory
 
 
 run_logger = loggers.get_logger("run")
 
 
-class BaseCleanStrategy(DataStrategy):
+@StrategyFactory.register("base.clean")
+class BaseCleanStrategy(Strategy):
     def __init__(self, name: str, in_key: str, out_key: str, **kwargs):
         super().__init__(name=name, category="collect", in_key=in_key, out_key=out_key, **kwargs)
 
