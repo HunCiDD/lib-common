@@ -1,7 +1,8 @@
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, Optional
 from pathlib import Path
 
 import pandas as pd
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..logger.configs import loggers
