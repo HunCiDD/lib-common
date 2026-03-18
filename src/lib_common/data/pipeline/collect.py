@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ...logger.configs import loggers
 from ...connect.database.types import M
-from ...connect.database.repository import BaseRepository
+from ...connect.database.repository import Repository
 from ..converter import ListConverter
 from .base import DataStrategy, DataStrategyFactory
 
@@ -104,7 +104,7 @@ class DBCollectStrategy(BaseCollectStrategy):
         self.limit = limit
 
     def collect(self, context: Dict[str, Any]) -> pd.DataFrame | None:
-        rows = BaseRepository.list(
+        rows = Repository.list(
             session=self.session,
             model_cls=self.model_cls,
             filters=self.filters,
@@ -116,3 +116,51 @@ class DBCollectStrategy(BaseCollectStrategy):
             return ListConverter.to_dataframe([row.as_dict() for row in rows], columns=self.columns)
         else:
             return ListConverter.to_dataframe([row.as_dict() for row in rows])
+
+
+class DBSqlCollectStrategy(BaseCollectStrategy):
+    """
+    数据库通过 SQL 采集数据，支持参数绑定。
+    """
+
+    def __init__(
+        self,
+        name: str,
+        in_key: str,
+        out_key: str,
+        session: Session,
+        sql: str,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ):
+        """
+        :param name: 策略名称
+        :param in_key: 输入数据的键名（本策略未使用，保留接口一致性）
+        :param out_key: 输出数据在 context 中的键名
+        :param session: SQLAlchemy Session 对象
+        :param sql: 要执行的 SQL 语句，可使用命名占位符（如 :param_name）
+        :param params: 可选，SQL 参数字典，键对应 SQL 中的占位符
+        :param kwargs: 其他参数传递给父类
+        """
+        super().__init__(name=name, in_key=in_key, out_key=out_key, **kwargs)
+        self.session = session
+        self.sql = sql
+        self.params = params or {}
+
+    def collect(self, context: Dict[str, Any]) -> Optional[pd.DataFrame]:
+        """
+        执行 SQL 查询，将结果转换为 DataFrame。
+        若查询无结果，返回 None。
+        """
+        # 执行带参数绑定的 SQL
+        result = self.session.execute(text(self.sql), self.params)
+        rows = result.fetchall()
+        if not rows:
+            return None
+
+        # 提取列名并构造字典列表
+        columns = result.keys()
+        data = [dict(zip(columns, row)) for row in rows]
+
+        # 转换为 DataFrame（与 DBCollectStrategy 保持一致）
+        return ListConverter.to_dataframe(data)
