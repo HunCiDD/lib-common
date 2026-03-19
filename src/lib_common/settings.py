@@ -17,7 +17,7 @@ from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
 from .connect.database.schemas import DBConfigsM
 from .connect.redis.schemas import RedisConfigsM
-from .tasker.schemas import TaskerConfigsM
+from .tasks.schemas import TaskerConfigsM
 
 
 def get_model_config() -> SettingsConfigDict:

@@ -2,8 +2,8 @@ from typing import List
 from pydantic import BaseModel, Field
 
 
-class TaskerConfigsM(BaseModel):
-    tasks: List[str] = []
+class TasksConfigsM(BaseModel):
+    sources: List[str] = []
 
 
 class JobConfig(BaseModel):

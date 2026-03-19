@@ -39,7 +39,7 @@ class TaskScheduler:
         )
         # 自动导入
         task_logger.info(f"Auto import tasks package.")
-        for task_package in self.settings.tasker.tasks:
+        for task_package in self.settings.tasks.sources:
             AutoImportModules(task_package, include="*.tasks")
 
     def _auto_import_tasks(self, package_name: str):
