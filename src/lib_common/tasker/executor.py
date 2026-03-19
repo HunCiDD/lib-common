@@ -7,13 +7,13 @@ from .factory import TaskFuncFactory
 from .schemas import JobConfigGet
 from .models import JobRecord, JobStatus
 
-tasker_logger = loggers.get_logger("tasker")
+task_logger = loggers.get_logger("task")
 local_db = databases.get_database("local")
 
 
 @TaskFuncFactory.register("default.task")
 def task_func(*args, **kwargs):
-    tasker_logger.info(f"xxxx, task_func, {args}, {kwargs}")
+    task_logger.info(f"xxxx, task_func, {args}, {kwargs}")
 
 
 class TaskExecutor:
@@ -38,9 +38,9 @@ class TaskExecutor:
                 )
                 conn.add(record)
                 conn.flush()
-                tasker_logger.info(f"Add pending JobRecord {self.configs.t_name}...")
+                task_logger.info(f"Add pending JobRecord {self.configs.t_name}...")
             except Exception as e:
-                tasker_logger.exception(f"Add pending JobRecord {self.configs.t_name}, failed: {e}")
+                task_logger.exception(f"Add pending JobRecord {self.configs.t_name}, failed: {e}")
                 return
 
             # 开始运行
@@ -54,7 +54,7 @@ class TaskExecutor:
                 record.status = JobStatus.completed
                 record.result = rst
             except Exception as e:
-                tasker_logger.exception(f"Run task func, failed: {e}")
+                task_logger.exception(f"Run task func, failed: {e}")
                 record.status = JobStatus.failed
                 record.error = f"{e}"
             record.end_at = datetime.now()

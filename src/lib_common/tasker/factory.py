@@ -1,7 +1,7 @@
 from typing import Callable, Dict, Optional
 from ..logger.configs import loggers
 
-tasker_logger = loggers.get_logger("tasker")
+task_logger = loggers.get_logger("task")
 
 
 class TaskFuncFactory:
@@ -22,12 +22,12 @@ class TaskFuncFactory:
         """
         def wrapper(func: Callable) -> Callable:
             if name in cls._map:
-                tasker_logger.warning(
+                task_logger.warning(
                     f"任务名称 '{name}' 已存在，将被覆盖。"
                     f"原函数: {cls._map[name].__name__}，新函数: {func.__name__}"
                 )
             cls._map[name] = func
-            tasker_logger.info(f"注册任务: {name} -> {func.__module__}.{func.__name__}")
+            task_logger.info(f"注册任务: {name} -> {func.__module__}.{func.__name__}")
             return func
         return wrapper
 
@@ -46,6 +46,6 @@ class TaskFuncFactory:
         """注销指定名称的任务，成功返回 True，名称不存在返回 False。"""
         if name in cls._map:
             del cls._map[name]
-            tasker_logger.info(f"注销任务: {name}")
+            task_logger.info(f"注销任务: {name}")
             return True
         return False
