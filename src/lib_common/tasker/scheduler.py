@@ -15,6 +15,7 @@ from ..data.converter import StringConverter
 from ..settings import Settings
 from ..logger.configs import loggers
 from ..connect.configs import databases
+from ..utils.imports import AutoImportModules
 
 from .models import JobConfig
 from .schemas import JobConfigGet
@@ -39,7 +40,7 @@ class TaskScheduler:
         # 自动导入
         tasker_logger.info(f"Auto import tasks package.")
         for task_package in self.settings.tasker.tasks:
-            self._auto_import_tasks(task_package)
+            AutoImportModules(task_package, include="*.tasks")
 
     def _auto_import_tasks(self, package_name: str):
         """
