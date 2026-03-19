@@ -83,7 +83,7 @@ redis:
     port: 6379
     db: 0
 
-tasker:
+tasks:
   run: true
   app: a
   broker: "redis://localhost:6379/0"
