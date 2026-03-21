@@ -48,6 +48,9 @@ class PermissionChecker:
         self.required_permission = required_permission
 
     def __call__(self, jwt_payload: dict = Depends(get_jwt_payload)):
+        if settings.app.env == "dev":
+            return
+
         permissions = jwt_payload.get("permissions", [])
         if "all" in permissions:
             return
