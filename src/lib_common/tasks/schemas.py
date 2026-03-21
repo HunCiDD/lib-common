@@ -27,6 +27,7 @@ class JobConfigAdd(JobConfig): ...
 class JobConfigSet(JobConfig):
     id: str
     name: str | None = None
+    description: str | None = None
     category: str | None = None
     expression: str | None = None
     t_name: str | None = None
