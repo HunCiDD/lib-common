@@ -1,20 +1,19 @@
 from fastapi import APIRouter, Depends, status
 
 from ..app.schemas import Response, PageData
-from ..app.dependencies import PermissionChecker, ConditionParams
+from ..app.dependencies import ConditionParams
 from .schemas import JobConfigAdd, JobConfigSet, JobConfigGet, JobConfigFilter
 from .services import JobConfigService
 from .dependencies import job_config_service
 
 
-router = APIRouter(prefix="/tasker", tags=["tasker"])
+router = APIRouter(prefix="/task", tags=["task"])
 
 
 @router.get(
     "/job_configs",
     response_model=Response[PageData[JobConfigGet]],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(PermissionChecker("auth:menu_resources:list"))],
 )
 async def list_job_configs(
     conditions: dict = Depends(ConditionParams(JobConfigFilter)),
@@ -38,7 +37,6 @@ async def get_job_config(job_config_id: str, service: JobConfigService = Depends
     "/job_configs",
     response_model=Response[JobConfigGet],
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(PermissionChecker("auth:menu_resources:add"))],
 )
 async def add_job_config(job_config: JobConfigAdd, service: JobConfigService = Depends(job_config_service)):
     data = await service.add(job_config)
@@ -49,7 +47,6 @@ async def add_job_config(job_config: JobConfigAdd, service: JobConfigService = D
     "/job_configs/{job_config_id}",
     response_model=Response[JobConfigGet],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(PermissionChecker("auth:menu_resources:set"))],
 )
 async def set_job_config(
     job_config_id: str, job_config: JobConfigSet, service: JobConfigService = Depends(job_config_service)
@@ -62,7 +59,6 @@ async def set_job_config(
     "/job_configs/{job_config_id}",
     response_model=Response[str],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(PermissionChecker("auth:menu_resources:del"))],
 )
 async def del_job_config(job_config_id: str, service: JobConfigService = Depends(job_config_service)):
     await service.delete(job_config_id)
