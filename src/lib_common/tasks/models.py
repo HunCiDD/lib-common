@@ -39,7 +39,10 @@ class JobRecord(PKMixin, BaseModel):
 
     config_id = Column(String, ForeignKey("job_configs.id"), nullable=True, comment="配置ID")
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus), nullable=False, default=JobStatus.pending, comment="任务状态"
+        Enum(JobStatus, native_enum=False),
+        nullable=False,
+        default=JobStatus.pending,
+        comment="任务状态"
     )
     args = Column(JSON, default=[], comment="任务运行参数")
     kwargs = Column(JSON, default={}, comment="任务运行关键参数")
