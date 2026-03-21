@@ -49,7 +49,7 @@ def validate_domain(domain: str) -> str:
         raise ValueError("Hostname cannot be empty")
 
     # 区分单标签和标准域名
-    if '.' in domain:
+    if "." in domain:
         # 标准域名：必须包含至少一个点，且最后一个标签（顶级域）至少两个字母
         pattern = r"^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))*\.[a-z]{2,}$"
         if not re.match(pattern, domain, re.IGNORECASE):

@@ -1,11 +1,10 @@
 from enum import Enum as PyEnum
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, ForeignKey, Text, Enum
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import JSON, Boolean, Column, DateTime, String, ForeignKey, Text, Enum
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..connect.database.base import BaseModel
 from ..connect.database.mixins import PKMixin, TimeAtMixin
-
 
 
 class JobStatus(str, PyEnum):

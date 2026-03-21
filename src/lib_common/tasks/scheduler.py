@@ -27,7 +27,7 @@ local_db = databases.get_database("local")
 
 class TaskScheduler:
     def __init__(self, settings: Settings):
-        task_logger.info(f"Init...")
+        task_logger.info("Init...")
 
         self.settings = settings
         self._job_stores = {"default": SQLAlchemyJobStore(url=local_db.url)}
@@ -38,7 +38,7 @@ class TaskScheduler:
             jobstores=self._job_stores, executors=self._executors, job_defaults=self._job_defaults, timezone=utc
         )
         # 自动导入
-        task_logger.info(f"Auto import tasks package.")
+        task_logger.info("Auto import tasks package.")
         for task_package in self.settings.tasks.sources:
             AutoImportModules(task_package, include="*.tasks")
 

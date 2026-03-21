@@ -1,5 +1,4 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 from .strategy import Strategy, StrategyFactory
@@ -45,4 +44,3 @@ class PipelineBuilder:
             raise ValueError("Failed, strategies must in strategy configs")
 
         return Pipeline(name=pl_name, description=pl_description, strategies=strategies)
-

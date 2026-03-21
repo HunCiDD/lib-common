@@ -17,7 +17,6 @@ def task_func(*args, **kwargs):
 
 
 class TaskExecutor:
-
     def __init__(self, configs: JobConfigGet):
         self.configs = configs
 
@@ -34,7 +33,7 @@ class TaskExecutor:
                     config_id=self.configs.id,
                     status=JobStatus.pending,
                     args=self.configs.t_args,
-                    kwargs=self.configs.t_kwargs
+                    kwargs=self.configs.t_kwargs,
                 )
                 conn.add(record)
                 conn.flush()

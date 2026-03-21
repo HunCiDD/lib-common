@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict
 from ..logger.configs import loggers
 
 task_logger = loggers.get_logger("task")
@@ -6,6 +6,7 @@ task_logger = loggers.get_logger("task")
 
 class TaskFuncFactory:
     """任务工厂，用于注册和获取可调用的任务函数。"""
+
     _map: Dict[str, Callable] = {}
 
     @classmethod
@@ -20,19 +21,20 @@ class TaskFuncFactory:
 
         如果名称已被注册，会发出警告并覆盖原函数。
         """
+
         def wrapper(func: Callable) -> Callable:
             if name in cls._map:
                 task_logger.warning(
-                    f"任务名称 '{name}' 已存在，将被覆盖。"
-                    f"原函数: {cls._map[name].__name__}，新函数: {func.__name__}"
+                    f"任务名称 '{name}' 已存在，将被覆盖。原函数: {cls._map[name].__name__}，新函数: {func.__name__}"
                 )
             cls._map[name] = func
             task_logger.info(f"注册任务: {name} -> {func.__module__}.{func.__name__}")
             return func
+
         return wrapper
 
     @classmethod
-    def get(cls, name: str, default=None) -> Optional[Callable]:
+    def get(cls, name: str, default=None) -> Callable | None:
         """根据名称获取已注册的任务函数，若不存在则返回 None。"""
         return cls._map.get(name, default)
 

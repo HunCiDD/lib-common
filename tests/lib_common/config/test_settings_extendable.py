@@ -9,7 +9,7 @@ from lib_common.cryptor.schemas import CryptorConfigsM, CryptorRootConfigsM
 from lib_common.logger.schemas import LoggerConfigsM
 from lib_common.connect.database.schemas import DBConfigsM
 from lib_common.connect.redis.schemas import RedisConfigsM
-from lib_common.app.schemas import AppConfigs
+from lib_common.app.schemas import AppConfigsM
 
 
 class TestBaseSettings(BaseSettings):
@@ -29,8 +29,8 @@ class TestBaseSettings(BaseSettings):
     )
 
     # 覆盖 app 字段，提供有效的默认值
-    app: AppConfigs = Field(
-        default_factory=lambda: AppConfigs(
+    app: AppConfigsM = Field(
+        default_factory=lambda: AppConfigsM(
             secret=SecretStr("test_secret_key"),
             algorithm="HS256",
             access_token_expire=15,

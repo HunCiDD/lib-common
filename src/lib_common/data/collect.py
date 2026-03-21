@@ -1,4 +1,4 @@
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any, Type
 from pathlib import Path
 
 import pandas as pd
@@ -135,7 +135,7 @@ class DBSqlCollectStrategy(BaseCollectStrategy):
         out_key: str,
         session: Session,
         sql: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Dict[str, Any] | None = None,
         **kwargs,
     ):
         """
@@ -152,7 +152,7 @@ class DBSqlCollectStrategy(BaseCollectStrategy):
         self.sql = sql
         self.params = params or {}
 
-    def collect(self, context: Dict[str, Any]) -> Optional[pd.DataFrame]:
+    def collect(self, context: Dict[str, Any]) -> pd.DataFrame | None:
         """
         执行 SQL 查询，将结果转换为 DataFrame。
         若查询无结果，返回 None。

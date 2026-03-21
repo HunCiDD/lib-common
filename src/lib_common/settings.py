@@ -12,7 +12,7 @@ from pydantic_settings import (
     NestedSecretsSettingsSource,
 )
 
-from .app.schemas import AppConfigs
+from .app.schemas import AppConfigsM
 from .logger.schemas import LoggerConfigsM
 from .cryptor.schemas import CryptorConfigsM
 from .connect.database.schemas import DBConfigsM
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # 使用动态配置
     model_config = get_model_config()
 
-    app: AppConfigs = Field(default_factory=AppConfigs, description="App应用配置")
+    app: AppConfigsM = Field(default_factory=AppConfigsM, description="App应用配置")
     loggers: Dict[str, LoggerConfigsM] = Field(default_factory=dict, description="日志配置")
     cryptors: CryptorConfigsM = Field(default_factory=CryptorConfigsM, description="加密配置")
     databases: Dict[str, DBConfigsM] = Field(default_factory=dict, description="数据库配置")

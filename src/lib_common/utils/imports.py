@@ -1,4 +1,4 @@
-from typing import Union, List, Optional
+from typing import List
 
 import importlib
 import pkgutil
@@ -19,8 +19,8 @@ class AutoImportModules:
     def __init__(
         self,
         root: str,
-        include: Optional[Union[str, List[str]]] = None,
-        exclude: Optional[Union[str, List[str]]] = None,
+        include: str | List[str] | None = None,
+        exclude: str | List[str] | None = None,
     ):
         """
         Args:
@@ -63,7 +63,7 @@ class AutoImportModules:
         self._find_and_import(self.root, package)
 
     @staticmethod
-    def _normalize_patterns(patterns: Optional[Union[str, List[str]]]) -> List[str]:
+    def _normalize_patterns(patterns: str | List[str] | None) -> List[str]:
         """将输入的模式参数规范化为列表，None 转换为空列表"""
         if patterns is None:
             return []

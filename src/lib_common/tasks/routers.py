@@ -40,9 +40,7 @@ async def get_job_config(job_config_id: str, service: JobConfigService = Depends
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(PermissionChecker("auth:menu_resources:add"))],
 )
-async def add_job_config(
-    job_config: JobConfigAdd, service: JobConfigService = Depends(job_config_service)
-):
+async def add_job_config(job_config: JobConfigAdd, service: JobConfigService = Depends(job_config_service)):
     data = await service.add(job_config)
     return {"code": 200, "data": data}
 

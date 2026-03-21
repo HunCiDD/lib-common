@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict, SecretStr
 from ..types import T, SchemaGetT
 
 
-class AppConfigs(BaseModel):
+class AppConfigsM(BaseModel):
     """应用配置"""
 
     environment: str = Field(default="production", description="运行环境")
@@ -17,8 +17,9 @@ class AppConfigs(BaseModel):
     host: str = Field(default="127.0.0.1", description="应用主机地址")
     port: int = Field(default=8000, description="应用端口号")
     tz: str = Field(default="Asia/Shanghai", description="应用时区")
+    api_key: SecretStr = Field(default=SecretStr(""))
+    api_secret: SecretStr = Field(default=SecretStr(""))
 
-    secret: SecretStr = Field(default=SecretStr(""))
     algorithm: str = "HS256"
     access_token_expire: int = 15  # 分钟
     refresh_token_expire: int = 3  # 天

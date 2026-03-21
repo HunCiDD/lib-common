@@ -2,6 +2,8 @@ from typing import List, Dict, Type, Any, get_type_hints
 
 import jwt
 from urllib.parse import parse_qs
+
+from .schemas import AppConfigsM
 from pydantic import BaseModel, Field, create_model
 from fastapi import Request, Query, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -17,16 +19,66 @@ run_logger = loggers.get_logger("run")
 cryptor = cryptors.get_cryptor("default")
 
 
+# 假设这是一个验证 API Key 并返回客户端信息的函数（需根据实际情况实现）
+def validate_api_key(api_key: str) -> dict | None:
+    """
+    验证 API Key 的有效性，返回客户端信息。
+    实际实现中应查询数据库，检查 API Key 是否存在、是否过期，并获取对应的权限列表。
+    """
+    # 示例实现：从配置或数据库读取
+    # 这里仅作演示，实际请替换为真实逻辑
+    if api_key == "test_machine_key":
+        return {
+            "client_id": "machine_001",
+            "permissions": ["read:data", "write:data"],  # 机机专用权限
+        }
+    return None
+
+
+def get_auth_payload(
+    request: Request, security: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
+) -> dict:
+    """
+    获取认证载荷，支持两种方式：
+    1. Bearer Token (JWT) - 用于用户调用
+    2. API Key (通过自定义 Header) - 用于机机调用
+    """
+    # 开发环境直接返回全权限载荷
+    if settings.app.environment == "dev":
+        return {"type": "dev", "permissions": ["all"]}
+
+        # 2. 尝试 API Key（机机调用）
+    api_key_header = getattr(settings.app, "api_key_header", "X-API-Key")
+    api_key = request.headers.get(api_key_header)
+    if api_key:
+        try:
+            client_info = validate_api_key(api_key)
+            if client_info:
+                return {
+                    "type": "machine",
+                    "sub": client_info.get("client_id"),
+                    "permissions": client_info.get("permissions", []),
+                }
+            else:
+                raise UnauthorizedException(message="Invalid API Key")
+        except Exception as e:
+            run_logger.exception(e)
+            raise UnauthorizedException(message="API Key validation failed")
+
+
 def get_jwt_payload(security: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> dict:
     """
     获取jwt中 payload数据
     :param security:
     :return:
     """
+    app_configs: AppConfigsM = settings.app
+    if app_configs.environment == "dev":
+        return {}
     try:
         token = security.credentials
-        secret = settings.app.secret.get_secret_value()
-        payload = jwt.decode(token, secret, algorithms=[settings.app.algorithm])
+        secret = app_configs.api_secret.get_secret_value()
+        payload = jwt.decode(token, secret, algorithms=[app_configs.algorithm])
         if payload.get("type") != "access":
             raise UnauthorizedException(message="Invalid token type, must be access")
 
@@ -48,7 +100,7 @@ class PermissionChecker:
         self.required_permission = required_permission
 
     def __call__(self, jwt_payload: dict = Depends(get_jwt_payload)):
-        if settings.app.env == "dev":
+        if settings.app.environment == "dev":
             return
 
         permissions = jwt_payload.get("permissions", [])
