@@ -89,12 +89,16 @@ class TaskScheduler:
 
     def start(self):
         task_logger.info("Start...")
+        self._remove_jobs()
         self._load_jobs()
         self._scheduler.start()
 
     def shutdown(self):
         task_logger.info("Shutdown...")
         self._scheduler.shutdown()
+
+    def _remove_jobs(self):
+        self._scheduler.remove_all_jobs()
 
     def _load_jobs(self):
         """
