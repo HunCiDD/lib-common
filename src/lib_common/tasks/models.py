@@ -7,7 +7,7 @@ from ..connect.database.base import BaseModel
 from ..connect.database.mixins import PKMixin, TimeAtMixin
 
 
-class JobStatus(str, PyEnum):
+class JobStatus(PyEnum):
     pending = "pending"
     running = "running"
     completed = "completed"
@@ -39,10 +39,7 @@ class JobRecord(PKMixin, BaseModel):
 
     config_id = Column(String, ForeignKey("job_configs.id"), nullable=True, comment="配置ID")
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus, native_enum=False),
-        nullable=False,
-        default=JobStatus.pending,
-        comment="任务状态"
+        Enum(JobStatus, native_enum=False), nullable=False, default=JobStatus.pending, comment="任务状态"
     )
     args = Column(JSON, default=[], comment="任务运行参数")
     kwargs = Column(JSON, default={}, comment="任务运行关键参数")

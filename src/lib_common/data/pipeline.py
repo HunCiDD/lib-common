@@ -1,46 +1,263 @@
 from __future__ import annotations
-from typing import Any, Dict, List
 
-from .strategy import Strategy, StrategyFactory
+from typing import Any, List, Type, Literal, Dict
+from abc import ABC, abstractmethod
+
+import pandas as pd
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from ..utils.files import ExeclFile
+from ..objects import Context
+from ..designs.factory import RegisterFactory
+from ..logger.configs import loggers
+from ..connect.database.base import BaseModel
+from ..connect.database.repository import Repository
+from .converter import ListConverter
+
+
+run_logger = loggers.get_logger("run")
+
+# 流(Pipeline)--阶段（Stage）--操作（Option）
+"""
+Pipeline
+|--（Stage）collect 采集
+|-----------|------（Option）fetch 获取
+|
+|--（Stage）clean 清洗
+|-----------|------（Option）validate 校验
+|-----------|------（Option）normalizer 标准化
+|-----------|------（Option）deduplicator 标准化
+|-----------|------（Option）filler 标准化
+|
+|--（Stage）storage 存储
+|-----------|------（Option）write 写入
+|
+|--（Stage）analyse 分析
+|-----------|------（Option）backtest 写入
+|
+|--（Stage）visual 可视化
+|-----------|------（Option）rander 渲染
+"""
+
+
+class Option(ABC):
+    desc: str = "option"
+
+    def __init__(self, stage: Stage, ctx: Context):
+        self.stage = stage
+        self.ctx = ctx
+
+    @abstractmethod
+    def run(self, *args, **kwargs) -> None: ...
+
+    def save(self, data: Any, nullable=False):
+        """保存数据"""
+        if isinstance(data, pd.DataFrame):
+            if not nullable and data.empty:
+                raise ValueError("数据不能为空")
+        else:
+            if not nullable and not data:
+                raise ValueError("数据不能为空")
+
+        if hasattr(data, "__len__"):
+            run_logger.info(f"成功采集到数据：{len(data)}条记录...")
+
+        self.ctx.set(self.stage.okey, data)
+        run_logger.info(f"成功保存到上下文：{self.stage.okey}")
+
+
+class OptionFactory(RegisterFactory[Option]):
+    _map = {}
+
+
+class Stage:
+    def __init__(self, desc: str, ikey: str = "in", okey: str = "out"):
+        self.desc: str = desc
+        self.ikey = ikey
+        self.okey = okey
+        self._options: List[Type[Option]] = []
+
+    @property
+    def options(self) -> List[Type[Option]]:
+        return self._options
+
+    @options.setter
+    def options(self, options: List[Type[Option]]):
+        self._options = options
+
+    def run(self, ctx: Context, *args, **kwargs) -> None:
+        run_logger.info(f"开始运行: {self.desc}...")
+        for i, option in enumerate(self._options):
+            try:
+                # 对应操作初始化
+                op = option(self, ctx)
+                op.run()
+            except Exception as e:
+                run_logger.exception(f"{i}-运行失败: {e}")
 
 
 class Pipeline:
-    def __init__(self, name: str, description: str = "", strategies: List[Strategy] = None):
-        self.name = name
-        self.description = description
-        self.strategies = strategies or []
-        self.context: Dict[str, Any] = {}
+    def __init__(self, desc: str):
+        self.desc: str = desc
+        self._stages: List[Stage] = []
 
-    def add(self, strategy: Strategy) -> Pipeline:
-        self.strategies.append(strategy)
-        return self  # 支持链式调用
+    @property
+    def stages(self) -> List[Stage]:
+        return self._stages
 
-    def run(self, **kwargs) -> None:
-        for strategy in self.strategies:
-            strategy.execute(self.context)
+    @stages.setter
+    def stages(self, stages: List[Stage]):
+        self._stages = stages
+
+    def run(self, ctx: Context, *args, **kwargs) -> None:
+        run_logger.info(f"开始运行: {self.desc}...")
+        for i, stage in enumerate(self._stages):
+            try:
+                stage.run(ctx, *args, **kwargs)
+            except Exception as e:
+                run_logger.exception(f"{i}-运行失败: {e}")
 
 
-class PipelineBuilder:
-    @staticmethod
-    def build(pl_name: str, pl_description: str, strategy_configs: List[Dict[str, Any]]) -> Pipeline:
-        """"""
-        # 根据配置构建策略实例
-        strategies = []
-        for config in strategy_configs:
-            s_name = config.get("name", "")
-            s_category = config.get("category", "base")
-            s_in_key = config.get("ik", "0")
-            s_out_key = config.get("out_key", "0")
-            s_kwargs = config.get("kwargs", {})
+@OptionFactory.register("execl.fetch")
+class ExeclFetchOption(Option):
+    desc = "Execl采集操作"
 
-            strategy = StrategyFactory.create(
-                name=s_name, category=s_category, in_key=s_in_key, out_key=s_out_key, **s_kwargs
-            )
-            if not strategy:
-                raise ValueError("Failed, name must in strategy configs")
-            strategies.append(strategy)
+    def run(self, *args, **kwargs) -> None:
+        df_fetched = self.fetch()
+        self.save(df_fetched)
 
-        if not strategies:
-            raise ValueError("Failed, strategies must in strategy configs")
+    def fetch(self, *args, **kwargs) -> pd.DataFrame:
+        method: str = self.ctx.get("collect.fetch.method", "")
+        if method != "execl":
+            raise TypeError(f"{self.desc} 仅支持method为 execl")
 
-        return Pipeline(name=pl_name, description=pl_description, strategies=strategies)
+        file: str = self.ctx.get("collect.fetch.file", "")
+        if not file:
+            raise ValueError(f"{self.desc} 待读取文件必须传入 {file}")
+        engine: Literal["xlrd", "openpyxl", "odf", "pyxlsb", "calamine"] = self.ctx.get(
+            "collect.fetch.engine", "openpyxl"
+        )
+        dtype: dict = self.ctx.get("collect.fetch.dtype", None)
+        execl_file = ExeclFile(file, engine, dtype)
+        return execl_file.load()
+
+
+@OptionFactory.register("execl.write")
+class ExeclWriteOption(Option):
+    """
+    通用文件存储接口：根据 pandas DataFrame，存储为 文件扩展名自动读取 CSV 或 Excel 文件为
+    """
+
+    desc = "Execl写入操作"
+
+    def run(self, *args, **kwargs) -> None:
+        self.write(*args, **kwargs)
+
+    def write(self, *args, **kwargs) -> None:
+        # 检查待写入数据
+        df_data = self.ctx.get(self.stage.ikey, None)
+        if not isinstance(df_data, pd.DataFrame):
+            raise ValueError(f"{self.desc} 待写入数据必须是pd.DataFrame类型")
+
+        # excel 文件路径
+        file: str = self.ctx.get("collect.write.file", "")
+        if not file:
+            raise ValueError(f"{self.desc} 待写入文件必须传入 {file}")
+        engine: Literal["xlrd", "openpyxl", "odf", "pyxlsb", "calamine"] = self.ctx.get(
+            "collect.write.engine", "openpyxl"
+        )
+        f = ExeclFile(file, engine)
+        f.dump(df_data)
+
+
+@OptionFactory.register("db.fetch")
+class DBFetchOption(Option):
+    desc = "DB采集操作"
+
+    def run(self, *args, **kwargs) -> None:
+        df_fetched = self.fetch(*args, **kwargs)
+        self.save(df_fetched)
+
+    def fetch(self, *args, **kwargs) -> pd.DataFrame:
+        session = self.ctx.get("collect.session", "")
+        if not isinstance(session, Session):
+            raise ValueError(f"{self.desc}")
+        method: str = self.ctx.get("collect.fetch.method", "")
+        if method == "sql":
+            df_fetched = self.fetch_by_sql(session, *args, **kwargs)
+        elif method == "model":
+            df_fetched = self.fetch_by_model(session, *args, **kwargs)
+        else:
+            raise ValueError(f"{self.desc} 不支持该采集方式 {method}")
+
+        return df_fetched
+
+    def fetch_by_sql(self, session: Session, *args, **kwargs) -> pd.DataFrame:
+        sql = self.ctx.get("collect.fetch.sql", "")
+        params = self.ctx.get("collect.fetch.params", {})
+        if not sql:
+            raise ValueError(f"{self.desc} 必须存在 sql ")
+
+        result = session.execute(text(sql), params)
+        rows = result.fetchall()
+        if not rows:
+            return pd.DataFrame()
+
+        # 提取列名并构造字典列表
+        columns = result.keys()
+        data = [dict(zip(columns, row)) for row in rows]
+        df_fetched = ListConverter.to_dataframe(data)
+        return df_fetched
+
+    def fetch_by_model(self, session: Session, *args, **kwargs) -> pd.DataFrame:
+        model: Type[BaseModel] = self.ctx.get("collect.model", None)
+        if not model:
+            raise ValueError(f"{self.desc} 必须存在 model")
+        columns: List[str] = self.ctx.get("collect.columns", [])
+        filters: Dict[str, Any] = self.ctx.get("collect.filters", {})
+        orders: Dict[str, Any] = self.ctx.get("collect.orders", {})
+        offset: int = self.ctx.get("collect.offset", 0)
+        limit: int = self.ctx.get("collect.limit", 100)
+
+        rows = Repository.list(session, model, filters, orders, offset, limit)
+        if columns:
+            df_fetched = ListConverter.to_dataframe([row.as_dict() for row in rows], columns=columns)
+        else:
+            df_fetched = ListConverter.to_dataframe([row.as_dict() for row in rows])
+        return df_fetched
+
+
+@OptionFactory.register("db.write")
+class DBWriteOption(Option):
+    desc = "DB写入操作"
+
+    def run(self, *args, **kwargs) -> None:
+        self.write(*args, **kwargs)
+
+    def write(self, *args, **kwargs) -> None:
+        # 检查待写入数据
+        df_data = self.ctx.get(self.stage.ikey, None)
+        if not isinstance(df_data, pd.DataFrame):
+            raise ValueError(f"{self.desc} 待写入数据必须是pd.DataFrame类型")
+
+        session = self.ctx.get("storage.write.session", "")
+        if not isinstance(session, Session):
+            raise ValueError(f"{self.desc} 必须传入Session")
+
+        method = self.ctx.get("storage.write.method", "model")
+        if method != "model":
+            raise ValueError(f"{self.desc} method方式只支持 model")
+        self.write_by_model(session, df_data, *args, *kwargs)
+
+    def write_by_model(self, session: Session, df_data: pd.DataFrame, *args, **kwargs):
+        model: Type[BaseModel] = self.ctx.get("storage.write.model", None)
+        if not model or not issubclass(model, BaseModel):
+            raise TypeError(f"{self.desc} 模型参数不合法")
+
+        conflict_columns: List[str] = self.ctx.get("storage.write.conflict_columns", [])
+        if not conflict_columns:
+            raise ValueError(f"{self.desc} conflict_columns 必须存在")
+
+        records = df_data.to_dict(orient="records")
+        Repository.upsert(session, model, records, conflict_columns)

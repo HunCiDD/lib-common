@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-__all__ = [
-    "Dir",
-    "EnvFile",
-    "File",
-    "FileException",
-    "IniFile",
-    "JsonFile",
-    "XmlFile",
-    "YamlFile",
-]
+__all__ = ["Dir", "EnvFile", "File", "FileException", "IniFile", "JsonFile", "XmlFile", "YamlFile", "ExeclFile"]
 
 import json
 import os
@@ -19,8 +10,9 @@ from collections.abc import Callable
 from configparser import ConfigParser
 from functools import reduce
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+import pandas as pd
 from defusedxml import ElementTree
 from dotenv import dotenv_values
 from yaml import safe_load
@@ -263,3 +255,35 @@ class YamlFile(File):
             if hook:
                 data = hook(data)
         return data
+
+
+class ExeclFile(File):
+    ALLOWED_SUFFIX = (".csv", ".xls", ".xlsx")
+
+    def __init__(
+        self,
+        path: str | Path,
+        engine: Literal["xlrd", "openpyxl", "odf", "pyxlsb", "calamine"] = "openpyxl",
+        dbtype: dict = None,
+    ):
+        super().__init__(path)
+        self.engine = engine
+        self.dbtype = dbtype
+
+    def load(self, encoding: str = "utf-8", hook: Callable | None = None) -> pd.DataFrame:
+        if self.suffix == ".csv":
+            data = pd.read_csv(self.path, dtype=self.dbtype, encoding=encoding)
+        elif self.suffix in (".xls", ".xlsx"):
+            data = pd.read_excel(self.path, engine=self.engine, dtype=self.dbtype)
+        else:
+            raise ValueError(f"不支持的文件格式: {self.suffix}，仅支持 .csv, .xls, .xlsx")
+        return data
+
+    def dump(self, data: pd.DataFrame, encoding: str = "utf-8"):
+        if self.suffix == ".csv":
+            data.to_csv(self.path)
+        elif self.suffix in (".xls", ".xlsx"):
+            with pd.ExcelWriter(self.path, engine=self.engine) as writer:
+                data.to_excel(writer, sheet_name="Sheet1")
+        else:
+            raise ValueError(f"不支持的文件格式: {self.suffix}，仅支持 .csv, .xls, .xlsx")
