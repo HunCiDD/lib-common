@@ -61,21 +61,25 @@ class Context:
     def __init__(self, data: Dict[str, Any] = None):
         self._data = data if data else {}
 
-    def get(self, path: str, default: Any = None):
+    def get(self, *paths: str, default: Any = None):
         """
         通过点分隔路径获取值。
-        :param path: 点分隔路径，例如 "a.b.c"
+        :param paths: 支持多个路径，每个路径都以点分隔路径，例如 "a.b.c", "e.f.c"
         :param default: 路径不存在时返回的默认值
         :return: 路径对应的值，或默认值
         """
-        keys = path.split(".")
-        d = self._data
-        for key in keys:
-            if isinstance(d, dict) and key in d:
-                d = d[key]
-            else:
-                return default
-        return d
+        for path in paths:
+            keys = path.split(".")
+            d = self._data
+            try:
+                for key in keys:
+                    if not isinstance(d, dict):
+                        raise TypeError
+                    d = d[key]
+                return d
+            except (KeyError, TypeError):
+                continue
+        return default
 
     def set(self, path: str, value: Any):
         """

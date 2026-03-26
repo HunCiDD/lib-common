@@ -25,24 +25,22 @@ Pipeline
 |-----------|------（Option）fetch 获取
 |
 |--（Stage）clean 清洗
-|-----------|------（Option）validate 校验
-|-----------|------（Option）normalizer 标准化
-|-----------|------（Option）deduplicator 标准化
-|-----------|------（Option）filler 标准化
+|-----------|------（Option）format 格式化
 |
 |--（Stage）storage 存储
 |-----------|------（Option）write 写入
 |
 |--（Stage）analyse 分析
-|-----------|------（Option）backtest 写入
+|-----------|------（Option）backtest 回测
 |
 |--（Stage）visual 可视化
-|-----------|------（Option）rander 渲染
+|-----------|------（Option）render 渲染
 """
 
 
 class Option(ABC):
     desc: str = "option"
+    category: str = "option"
 
     def __init__(self, stage: Stage, ctx: Context):
         self.stage = stage
@@ -66,14 +64,20 @@ class Option(ABC):
         self.ctx.set(self.stage.okey, data)
         run_logger.info(f"成功保存到上下文：{self.stage.okey}")
 
+    def keys(self, key: str) -> List[str]:
+        if "." not in key:
+            return [f"{self.stage.category}.{self.category}.{key}", key]
+        return [key]
+
 
 class OptionFactory(RegisterFactory[Option]):
     _map = {}
 
 
 class Stage:
-    def __init__(self, desc: str, ikey: str = "in", okey: str = "out"):
+    def __init__(self, desc: str, category: str, ikey: str = "in", okey: str = "out"):
         self.desc: str = desc
+        self.category: str = category
         self.ikey = ikey
         self.okey = okey
         self._options: List[Type[Option]] = []
@@ -122,6 +126,7 @@ class Pipeline:
 @OptionFactory.register("execl.fetch")
 class ExeclFetchOption(Option):
     desc = "Execl采集操作"
+    category = "fetch"
 
     def run(self, *args, **kwargs) -> None:
         df_fetched = self.fetch()
@@ -148,8 +153,8 @@ class ExeclWriteOption(Option):
     """
     通用文件存储接口：根据 pandas DataFrame，存储为 文件扩展名自动读取 CSV 或 Excel 文件为
     """
-
     desc = "Execl写入操作"
+    category = "write"
 
     def run(self, *args, **kwargs) -> None:
         self.write(*args, **kwargs)
@@ -174,6 +179,7 @@ class ExeclWriteOption(Option):
 @OptionFactory.register("db.fetch")
 class DBFetchOption(Option):
     desc = "DB采集操作"
+    category = "fetch"
 
     def run(self, *args, **kwargs) -> None:
         df_fetched = self.fetch(*args, **kwargs)
@@ -231,6 +237,7 @@ class DBFetchOption(Option):
 @OptionFactory.register("db.write")
 class DBWriteOption(Option):
     desc = "DB写入操作"
+    category = "write"
 
     def run(self, *args, **kwargs) -> None:
         self.write(*args, **kwargs)
