@@ -35,6 +35,9 @@ Pipeline
 |
 |--（Stage）visual 可视化
 |-----------|------（Option）render 渲染
+|
+|--（Stage）notify 通知
+|-----------|------（Option）send 发送
 """
 
 
@@ -59,12 +62,12 @@ class Option(ABC):
                 raise ValueError("数据不能为空")
 
         if hasattr(data, "__len__"):
-            run_logger.info(f"成功采集到数据：{len(data)}条记录...")
+            run_logger.info(f"待保存数据：{len(data)}条记录...")
 
         self.ctx.set(self.stage.okey, data)
         run_logger.info(f"成功保存到上下文：{self.stage.okey}")
 
-    def keys(self, key: str) -> List[str]:
+    def _k(self, key: str) -> List[str]:
         if "." not in key:
             return [f"{self.stage.category}.{self.category}.{key}", key]
         return [key]
@@ -133,17 +136,17 @@ class ExeclFetchOption(Option):
         self.save(df_fetched)
 
     def fetch(self, *args, **kwargs) -> pd.DataFrame:
-        method: str = self.ctx.get("collect.fetch.method", "")
+        method: str = self.ctx.get("collect.fetch.method", default="")
         if method != "execl":
             raise TypeError(f"{self.desc} 仅支持method为 execl")
 
-        file: str = self.ctx.get("collect.fetch.file", "")
+        file: str = self.ctx.get("collect.fetch.file", default="")
         if not file:
             raise ValueError(f"{self.desc} 待读取文件必须传入 {file}")
         engine: Literal["xlrd", "openpyxl", "odf", "pyxlsb", "calamine"] = self.ctx.get(
             "collect.fetch.engine", "openpyxl"
         )
-        dtype: dict = self.ctx.get("collect.fetch.dtype", None)
+        dtype: dict = self.ctx.get("collect.fetch.dtype", default=None)
         execl_file = ExeclFile(file, engine, dtype)
         return execl_file.load()
 
@@ -161,12 +164,12 @@ class ExeclWriteOption(Option):
 
     def write(self, *args, **kwargs) -> None:
         # 检查待写入数据
-        df_data = self.ctx.get(self.stage.ikey, None)
+        df_data = self.ctx.get(self.stage.ikey, default=None)
         if not isinstance(df_data, pd.DataFrame):
             raise ValueError(f"{self.desc} 待写入数据必须是pd.DataFrame类型")
 
         # excel 文件路径
-        file: str = self.ctx.get("collect.write.file", "")
+        file: str = self.ctx.get("collect.write.file", default="")
         if not file:
             raise ValueError(f"{self.desc} 待写入文件必须传入 {file}")
         engine: Literal["xlrd", "openpyxl", "odf", "pyxlsb", "calamine"] = self.ctx.get(
@@ -186,10 +189,10 @@ class DBFetchOption(Option):
         self.save(df_fetched)
 
     def fetch(self, *args, **kwargs) -> pd.DataFrame:
-        session = self.ctx.get("collect.session", "")
+        session = self.ctx.get(*self._k("session"), default=None)
         if not isinstance(session, Session):
             raise ValueError(f"{self.desc}")
-        method: str = self.ctx.get("collect.fetch.method", "")
+        method: str = self.ctx.get("collect.fetch.method", default="")
         if method == "sql":
             df_fetched = self.fetch_by_sql(session, *args, **kwargs)
         elif method == "model":
@@ -200,8 +203,8 @@ class DBFetchOption(Option):
         return df_fetched
 
     def fetch_by_sql(self, session: Session, *args, **kwargs) -> pd.DataFrame:
-        sql = self.ctx.get("collect.fetch.sql", "")
-        params = self.ctx.get("collect.fetch.params", {})
+        sql = self.ctx.get("collect.fetch.sql", default="")
+        params = self.ctx.get("collect.fetch.params", default={})
         if not sql:
             raise ValueError(f"{self.desc} 必须存在 sql ")
 
@@ -217,14 +220,14 @@ class DBFetchOption(Option):
         return df_fetched
 
     def fetch_by_model(self, session: Session, *args, **kwargs) -> pd.DataFrame:
-        model: Type[BaseModel] = self.ctx.get("collect.model", None)
+        model: Type[BaseModel] = self.ctx.get("collect.fetch.model", default=None)
         if not model:
             raise ValueError(f"{self.desc} 必须存在 model")
-        columns: List[str] = self.ctx.get("collect.columns", [])
-        filters: Dict[str, Any] = self.ctx.get("collect.filters", {})
-        orders: Dict[str, Any] = self.ctx.get("collect.orders", {})
-        offset: int = self.ctx.get("collect.offset", 0)
-        limit: int = self.ctx.get("collect.limit", 100)
+        columns: List[str] = self.ctx.get("collect.fetch.columns", default=[])
+        filters: Dict[str, Any] = self.ctx.get("collect.fetch.filters", default={})
+        orders: Dict[str, Any] = self.ctx.get("collect.fetch.orders", default={})
+        offset: int = self.ctx.get("collect.fetch.offset", default=0)
+        limit: int = self.ctx.get("collect.fetch.limit", default=100)
 
         rows = Repository.list(session, model, filters, orders, offset, limit)
         if columns:
@@ -244,25 +247,25 @@ class DBWriteOption(Option):
 
     def write(self, *args, **kwargs) -> None:
         # 检查待写入数据
-        df_data = self.ctx.get(self.stage.ikey, None)
+        df_data = self.ctx.get(self.stage.ikey, default=None)
         if not isinstance(df_data, pd.DataFrame):
             raise ValueError(f"{self.desc} 待写入数据必须是pd.DataFrame类型")
 
-        session = self.ctx.get("storage.write.session", "")
+        session = self.ctx.get(*self._k("session"), default=None)
         if not isinstance(session, Session):
             raise ValueError(f"{self.desc} 必须传入Session")
 
-        method = self.ctx.get("storage.write.method", "model")
+        method = self.ctx.get("storage.write.method", default="model")
         if method != "model":
             raise ValueError(f"{self.desc} method方式只支持 model")
         self.write_by_model(session, df_data, *args, *kwargs)
 
     def write_by_model(self, session: Session, df_data: pd.DataFrame, *args, **kwargs):
-        model: Type[BaseModel] = self.ctx.get("storage.write.model", None)
+        model: Type[BaseModel] = self.ctx.get("storage.write.model", default=None)
         if not model or not issubclass(model, BaseModel):
             raise TypeError(f"{self.desc} 模型参数不合法")
 
-        conflict_columns: List[str] = self.ctx.get("storage.write.conflict_columns", [])
+        conflict_columns: List[str] = self.ctx.get("storage.write.conflict_columns", default=[])
         if not conflict_columns:
             raise ValueError(f"{self.desc} conflict_columns 必须存在")
 
