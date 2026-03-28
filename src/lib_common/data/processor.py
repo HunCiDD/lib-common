@@ -90,6 +90,85 @@ class DateTimeProcessor:
             dt = dt.replace(tzinfo=UTC)  # 假设无时区时间为UTC
         return dt.astimezone(target_tz)
 
+    @classmethod
+    def offset(cls, base: datetime, n: int, unit: str = "minute") -> datetime:
+        """
+        计算基准日期偏移 n 个单位后的日期时间。
+        参数:
+            base: datetime.date 或 datetime.datetime 对象，基准日期。
+            n: int，偏移数量，正数表示之后，负数表示之前。
+            unit: str，单位，可选 'day', 'week', 'month', 'year', 'minute', 'second'。
+
+        返回:
+            与 base 类型相同或提升为 datetime 的对象（当偏移分钟/秒且原为 date 时）。
+        """
+        # 天
+        if unit in ["second", "s"]:
+            # 如果传入的是 date（不含时间），则转换为当天的 datetime
+            if isinstance(base, datetime.date) and not isinstance(base, datetime.datetime):
+                base = datetime.datetime.combine(base, datetime.time())
+            delta = datetime.timedelta(seconds=n)
+            return base + delta
+        # 秒
+        elif unit in ["minute", "m"]:
+            if isinstance(base, datetime.date) and not isinstance(base, datetime.datetime):
+                base = datetime.datetime.combine(base, datetime.time())
+            delta = datetime.timedelta(minutes=n)
+            return base + delta
+        #
+        if unit in ["day", "d"]:
+            delta = datetime.timedelta(days=n)
+            return base + delta
+        # 周
+        elif unit == ["week", "w"]:
+            delta = datetime.timedelta(weeks=n)
+            return base + delta
+        # 月
+        elif unit == ["month", "M"]:
+            return cls._add_months(base, n)
+        # 年
+        elif unit == ["year", "Y"]:
+            return cls._add_months(base, n * 12)
+        else:
+            raise ValueError("unit 必须是 'day', 'week', 'month', 'year', 'minute', 'second'")
+
+    @classmethod
+    def _add_months(cls, date, months):
+        """安全的月份加减，支持正负 months，自动处理月份边界"""
+        year = date.year
+        month = date.month
+        total_months = year * 12 + month - 1 + months
+        new_year = total_months // 12
+        new_month = total_months % 12 + 1
+
+        if new_year < 1:
+            raise ValueError("偏移后年份小于1，无效")
+
+        day = date.day
+        max_day = cls._days_in_month(new_year, new_month)
+        if day > max_day:
+            day = max_day
+
+        if isinstance(date, datetime.datetime):
+            return datetime.datetime(
+                new_year, new_month, day, date.hour, date.minute, date.second, date.microsecond, date.tzinfo
+            )
+        else:
+            return datetime.date(new_year, new_month, day)
+
+    @staticmethod
+    def _days_in_month(year, month):
+        """返回指定年月的天数"""
+        if month == 2:
+            if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
+                return 29
+            else:
+                return 28
+        elif month in (4, 6, 9, 11):
+            return 30
+        else:
+            return 31
+
 
 class SeriesProcessor:
     @staticmethod
