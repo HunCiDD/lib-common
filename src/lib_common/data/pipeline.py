@@ -156,6 +156,7 @@ class ExeclWriteOption(Option):
     """
     通用文件存储接口：根据 pandas DataFrame，存储为 文件扩展名自动读取 CSV 或 Excel 文件为
     """
+
     desc = "Execl写入操作"
     category = "write"
 
@@ -271,3 +272,4 @@ class DBWriteOption(Option):
 
         records = df_data.to_dict(orient="records")
         Repository.upsert(session, model, records, conflict_columns)
+        run_logger.info(f"成功写入 {len(records)}条数据.")
