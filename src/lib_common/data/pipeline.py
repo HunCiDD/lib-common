@@ -117,6 +117,20 @@ class Pipeline:
     def stages(self, stages: List[Stage]):
         self._stages = stages
 
+    @classmethod
+    def build(cls, params: Dict[str, Any]) -> Pipeline:
+        pipeline = cls(desc=params["desc"])
+        for stage_params in params["stages"]:
+            # 提取 Stage 所需的参数（排除 options）
+            stage_kwargs = {k: v for k, v in stage_params.items() if k != "options"}
+            stage = Stage(**stage_kwargs)
+            # 设置 options（如果存在）
+            if "options" in stage_params:
+                stage.options = stage_params["options"]
+
+            pipeline.stages.append(stage)
+        return pipeline
+
     def run(self, ctx: Context, *args, **kwargs) -> None:
         run_logger.info(f"开始运行: {self.desc}...")
         for i, stage in enumerate(self._stages):
