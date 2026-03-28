@@ -1,6 +1,6 @@
 # 数据处理器
 from typing import Any, List, Dict, Callable
-from datetime import datetime, UTC
+from datetime import datetime, date, timedelta, UTC, time
 
 import pytz
 import pandas as pd
@@ -91,7 +91,7 @@ class DateTimeProcessor:
         return dt.astimezone(target_tz)
 
     @classmethod
-    def offset(cls, base: datetime, n: int, unit: str = "minute") -> datetime:
+    def offset(cls, base: datetime | date, n: int, unit: str = "minute") -> datetime:
         """
         计算基准日期偏移 n 个单位后的日期时间。
         参数:
@@ -105,29 +105,29 @@ class DateTimeProcessor:
         # 天
         if unit in ["second", "s"]:
             # 如果传入的是 date（不含时间），则转换为当天的 datetime
-            if isinstance(base, datetime.date) and not isinstance(base, datetime.datetime):
-                base = datetime.datetime.combine(base, datetime.time())
-            delta = datetime.timedelta(seconds=n)
+            if isinstance(base, date) and not isinstance(base, datetime):
+                base = datetime.combine(base, time())
+            delta = timedelta(seconds=n)
             return base + delta
         # 秒
         elif unit in ["minute", "m"]:
-            if isinstance(base, datetime.date) and not isinstance(base, datetime.datetime):
-                base = datetime.datetime.combine(base, datetime.time())
-            delta = datetime.timedelta(minutes=n)
+            if isinstance(base, date) and not isinstance(base, datetime):
+                base = datetime.combine(base, time())
+            delta = timedelta(minutes=n)
             return base + delta
         #
         if unit in ["day", "d"]:
-            delta = datetime.timedelta(days=n)
+            delta = timedelta(days=n)
             return base + delta
         # 周
-        elif unit == ["week", "w"]:
-            delta = datetime.timedelta(weeks=n)
+        elif unit in ["week", "w"]:
+            delta = timedelta(weeks=n)
             return base + delta
         # 月
-        elif unit == ["month", "M"]:
+        elif unit in ["month", "M"]:
             return cls._add_months(base, n)
         # 年
-        elif unit == ["year", "Y"]:
+        elif unit in ["year", "Y"]:
             return cls._add_months(base, n * 12)
         else:
             raise ValueError("unit 必须是 'day', 'week', 'month', 'year', 'minute', 'second'")
@@ -149,12 +149,12 @@ class DateTimeProcessor:
         if day > max_day:
             day = max_day
 
-        if isinstance(date, datetime.datetime):
-            return datetime.datetime(
+        if isinstance(date, datetime):
+            return datetime(
                 new_year, new_month, day, date.hour, date.minute, date.second, date.microsecond, date.tzinfo
             )
         else:
-            return datetime.date(new_year, new_month, day)
+            return date(new_year, new_month, day)
 
     @staticmethod
     def _days_in_month(year, month):
