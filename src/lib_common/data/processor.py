@@ -10,6 +10,8 @@ __all__ = [
     "DictProcessor",
     "ListProcessor",
     "StringProcessor",
+    "SeriesProcessor",
+    "DataFrameProcessor",
 ]
 
 
