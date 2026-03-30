@@ -271,8 +271,12 @@ class DBWriteOption(Option):
             raise ValueError(f"{self.desc} 必须传入Session")
 
         method = self.ctx.get("storage.write.method", default="model")
-        if method != "model":
-            raise ValueError(f"{self.desc} method方式只支持 model")
+        if method == "model":
+            self.write_by_model(session, df_data, *args, **kwargs)
+        elif method == "sql":
+            self.write_by_sql(session, df_data, *args, **kwargs)
+        else:
+            raise ValueError(f"{self.desc} method方式只支持 model, sql")
         self.write_by_model(session, df_data, *args, *kwargs)
 
     def write_by_model(self, session: Session, df_data: pd.DataFrame, *args, **kwargs):
@@ -287,3 +291,30 @@ class DBWriteOption(Option):
         records = df_data.to_dict(orient="records")
         Repository.upsert(session, model, records, conflict_columns)
         run_logger.info(f"成功写入 {len(records)}条数据.")
+
+    def write_by_sql(self, session: Session, df_data: pd.DataFrame, *args, **kwargs):
+        """使用原始 SQL 语句写入数据（支持批量 executemany）"""
+        sql = self.ctx.get("storage.write.sql", default="")
+        if not sql:
+            raise ValueError(f"{self.desc} 使用 sql 方式时必须配置 storage.write.sql")
+
+        if df_data.empty:
+            run_logger.info(f"{self.desc} 待写入数据为空，跳过 SQL 执行")
+            return
+
+        # 将 DataFrame 转换为字典列表，每行作为 SQL 命名参数的来源
+        records = df_data.to_dict(orient="records")
+
+        # 可选：分批提交，避免单次数据量过大（若未配置则不分批）
+        batch_size = self.ctx.get("storage.write.batch_size", default=0)
+        total = len(records)
+
+        if batch_size > 0:
+            for i in range(0, total, batch_size):
+                batch = records[i : i + batch_size]
+                session.execute(text(sql), batch)
+                run_logger.debug(f"已写入 {len(batch)} 条数据 (批次 {i // batch_size + 1})")
+        else:
+            session.execute(text(sql), records)
+
+        run_logger.info(f"成功通过 SQL 写入 {total} 条数据.")

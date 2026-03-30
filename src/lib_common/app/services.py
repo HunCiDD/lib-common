@@ -1,4 +1,4 @@
-from typing import Type, Any, Generic, Dict
+from typing import Type, Any, Generic, Dict, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,6 +50,17 @@ class BaseService(Generic[M, SchemaAddT, SchemaSetT, SchemaGetT]):
 
     @with_transaction
     async def list(
+        self,
+        conn: AsyncSession = None,
+        filters: Dict[str, Any] | None = None,
+        orders: Dict[str, Any] | None = None,
+    ) -> List[SchemaGetT]:
+        models = await self.repo.list(conn, filters, orders, offset=0, limit=-1)
+        items = [m.to_schema(self.schema_cls) for m in models]
+        return items
+
+    @with_transaction
+    async def page(
         self,
         conn: AsyncSession = None,
         filters: Dict[str, Any] | None = None,

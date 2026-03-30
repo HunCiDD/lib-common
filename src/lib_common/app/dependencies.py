@@ -192,6 +192,21 @@ class ConditionParams:
         self,
         request: Request,
         orders: str | None = Query(None, title="排序字段", description="格式:field1:asc,field2:desc"),
+    ) -> Dict[str, Any]:
+        query_params = self._parse_query(request)
+        # 过滤参数
+        _filter = self._model(**query_params).model_dump(exclude_none=True)
+        # 排序参数
+        _orders = self._parse_orders(orders)
+        return {"filters": _filter, "orders": _orders}
+
+
+# 分页加条件过滤参数构建
+class PageConditionParams(ConditionParams):
+    def __call__(
+        self,
+        request: Request,
+        orders: str | None = Query(None, title="排序字段", description="格式:field1:asc,field2:desc"),
         page: int = Query(1, ge=1, description="页码"),
         size: int = Query(10, ge=1, le=100, description="每页数量"),
     ) -> Dict[str, Any]:

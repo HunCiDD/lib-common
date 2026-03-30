@@ -1,5 +1,5 @@
 from typing import Type, List, Dict, Any, Iterable
-from sqlalchemy import inspect, update, delete, select, desc
+from sqlalchemy import inspect, update, delete, select, desc, JSON
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,11 +89,15 @@ def build_filter_conditions(model_cls: Type[M], filters: Dict[str, Any]) -> list
                 field_name = k[: -len(op)]
                 if hasattr(model_cls, field_name):
                     column = getattr(model_cls, field_name)
+                    if isinstance(column.type, JSON):
+                        continue
                     conditions.append(op_func(column, v))
                     matched = True
                 break
         if not matched and hasattr(model_cls, k):
             column = getattr(model_cls, k)
+            if isinstance(column.type, JSON):
+                continue
             conditions.append(column == v)
     return conditions
 
