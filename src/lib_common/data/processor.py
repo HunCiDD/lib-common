@@ -12,6 +12,7 @@ __all__ = [
     "StringProcessor",
     "SeriesProcessor",
     "DataFrameProcessor",
+    "DateTimeProcessor"
 ]
 
 

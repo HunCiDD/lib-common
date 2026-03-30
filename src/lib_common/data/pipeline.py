@@ -49,6 +49,10 @@ class Option(ABC):
         self.stage = stage
         self.ctx = ctx
 
+    @property
+    def session(self) -> Session:
+        return self.ctx.get("session", None)
+
     @abstractmethod
     def run(self, *args, **kwargs) -> None: ...
 
